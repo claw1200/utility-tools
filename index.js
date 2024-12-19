@@ -106,9 +106,29 @@ function decimal_selector() {
     }
 }
 
+function get_theme_cookie() {
+    // set theme based on cookie
+    const theme = localStorage.getItem('theme');
+    if (theme) {
+        document.body.className = theme + '-theme';
+        document.getElementById('theme-select').value = theme;
+    }
+}
+
+function theme_updated() {
+    // called when theme is updated
+    const theme = document.getElementById('theme-select').value;
+    localStorage.setItem('theme', theme);
+}
+
 // Add event listeners
 document.getElementById('old-bpm').addEventListener('input', handleInputChange);
 document.getElementById('pitch').addEventListener('input', handleInputChange);
 document.getElementById('new-bpm').addEventListener('input', handleInputChange);
 document.getElementById('decimal-places').addEventListener('input', handleInputChangeDecimal);
+document.getElementById('theme-select').addEventListener('change', theme_updated);
 
+// wait for the DOM to load before running the function
+document.addEventListener('DOMContentLoaded', function() {
+    get_theme_cookie();
+});
