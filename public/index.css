@@ -101,6 +101,22 @@ button:hover {
     cursor: pointer;
 }
 
+@media (max-width: 500px) {
+    .calculator {
+        position: relative;  /* Add this to make it a positioning context */
+    }
+    
+    .menu-icon {
+        position: absolute;  /* Change from fixed to absolute */
+        right: 20px;
+        top: 40px;
+        max-width: 40px;
+        z-index: 1000;
+        cursor: pointer;
+        transition: transform 0.2s ease;
+    }
+}
+
 .menu-icon img,
 .menu-icon svg {
     width: 100%;
@@ -130,6 +146,7 @@ button:hover {
     padding-top: 40px;
     box-shadow: -2px 0 5px rgba(0,0,0,0.1);
     transition: 0.3s;
+    z-index: 2;
 }
 
 .settings-panel.open {
@@ -159,6 +176,7 @@ button:hover {
     text-align: center;
     margin-top: 2rem;
     filter: grayscale(0.3);
+    z-index: 1;
 }
 
 .footer a {
