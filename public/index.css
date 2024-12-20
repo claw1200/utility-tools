@@ -352,19 +352,24 @@ body.orange-theme .menu-icon {
   );
   opacity: 0.5;
   border-radius: 40%;
-  animation: wave 150s infinite linear;
+  animation: wave 60s infinite linear;
   transform-origin: 50% 48%;
   bottom: -100%;
 }
 
 .wave2 {
-  animation: wave 250s infinite linear;
+  animation: wave 120s infinite linear;
   opacity: 0.3;
 }
 
 .wave3 {
-  animation: wave 350s infinite linear;
+  animation: wave 100s infinite linear;
   opacity: 0.2;
+}
+
+.wave4 {
+  animation: wave 50s infinite linear;
+  opacity: 0.1;
 }
 
 @keyframes wave {
