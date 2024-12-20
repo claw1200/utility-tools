@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Simple Downloader</title>
+    <link rel="stylesheet" type="text/css" href="index.css">
+    <link rel="stylesheet" type="text/css" href="themes.css">
+</head>
+<body>
+    
+    <div class="menu-icon" onclick="toggleMenu()">
+        <img src="menu.svg" alt="Menu" id="menu-icon">
+    </div>
+    
+    <div class="settings-panel">
+        <h2>Settings</h2>
+        <div class="setting-item">
+            <label>Theme:</label>
+            <select id="theme-select">
+                <option value="light">Light</option>
+                <option value="dark">Dark</option>
+                <option value="green">Green</option>
+                <option value="orange">Orange</option>
+                <option value="purple">Purple</option>
+                <option value="red">Red</option>
+            </select>
+        </div>
+
+    </div>
+
+    <div class="widget">
+        <h1>Simple Downloader</h1>    
+        <div class="input-group">
+            <label for="url-input-box">URL:</label>
+            <input type="string" id="url-input-box" placeholder="Enter URL">
+
+            <div class="extra-inputs-container">
+
+                <div class="extra-input">
+                    <label>Download Mode</label>
+                    <select id="download-mode">
+                        <option value="auto">Auto</option>
+                        <option value="audio">Audio</option>
+                    </select>
+                </div>
+
+                <div class="extra-input">
+                    <label>Video Quality</label>
+                    <select id="video-quality">
+                        <option value="144">144p</option>
+                        <option value="240">240p</option>
+                        <option value="360">360p</option>
+                        <option value="480">480p</option>
+                        <option value="720">720p</option>
+                        <option value="1080">1080p</option>
+                    </select>
+                </div>
+
+                <div class="extra-input">
+                    <label>Audio Format</label>
+                    <select id="audio-format">
+                        <option value="mp3">MP3</option>
+                        <option value="m4a">M4A</option>
+                        <option value="wav">WAV</option>
+                        <option value="aac">AAC</option>
+                        <option value="ogg">OGG</option>
+                        <option value="flac">FLAC</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+        <button id="download-button" onclick="download()">Download</button>
+
+        <div class="progress-bar id progress-bar">
+            <div class="progress" id="progress" style="display: none;"></div>
+        </div>
+
+    </div>
+
+    <div class="wave-container">
+        <div class="wave"></div>
+        <div class="wave wave2"></div>
+        <div class="wave wave3"></div>
+        <div class="wave wave4"></div>
+    </div>
+
+    <div class="footer">
+        <p>created by <a href="https://github.com/claw1200">claw</a></p>
+    </div>
+
+</body>
+<script src="index.js"></script>
+</html>

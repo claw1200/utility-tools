@@ -1,0 +1,266 @@
+
+:root {
+    --bg-light: #f0f0f0;
+    --widget-bg-light: #ffffff;
+    --text-light: #333333;
+    --border-light: #cccccc;
+    --button-light: #007bff;
+    --button-hover-light: #0056b3;    
+    --wave-color-light: rgba(255, 255, 255, 0.3);
+}
+
+body {
+    font-family: Arial, sans-serif;
+    margin: 0;
+    padding: 0;
+    background-color: var(--bg-light);
+    color: var(--text-light);
+    transition: background-color 0.3s, color 0.3s;
+}
+
+.widget {
+    max-width: 400px;
+    margin: 2rem auto;
+    padding: 2rem;
+    border-radius: 8px;
+    box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    background-color: var(--widget-bg-light);
+    transition: background-color 0.3s;
+}
+
+
+.input-group {
+    margin-bottom: 1rem;
+}
+
+.extra-inputs-container {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 1rem;
+    margin-bottom: 1rem;
+}
+
+.extra-inputs-container input {
+    width: 48%;
+    background-color: var(--widget-bg-light);
+}
+
+
+.extra-inputs-container select {
+  width: 100%;
+  padding: 0.5rem;
+  border-radius: 4px;
+  border: 1px solid var(--border-light);
+  background-color: var(--widget-bg-light);
+  color: var(--text-light);
+  transition: border-color 0.3s, background-color 0.3s, color 0.3s;
+}
+
+
+label {
+    display: block;
+    margin-bottom: 0.5rem;
+}
+
+input {
+    width: 95%;
+    padding: 0.5rem;
+    border: 1px solid var(--border-light);
+    border-radius: 4px;
+    background-color: var(--widget-bg-light);
+    color: var(--text-light);
+    transition: border-color 0.3s, background-color 0.3s, color 0.3s;
+}
+
+button {
+    width: 100%;
+    padding: 0.75rem;
+    background-color: var(--button-light);
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    margin-top: 1rem;
+    transition: background-color 0.3s;
+}
+
+button:hover {
+    background-color: var(--button-hover-light);
+}
+.menu-icon {
+    position: fixed;
+    right: 20px;
+    top: 20px;
+    width: 40px;
+    height: 40px;
+    display: flex;  /* Added to properly contain the icon */
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    transition: 0.2s ease;
+    cursor: pointer;
+}
+
+@media (max-width: 500px) {
+    .widgetulator {
+        position: relative;  /* Add this to make it a positioning context */
+    }
+    
+    .menu-icon {
+        position: absolute;  /* Change from fixed to absolute */
+        right: 20px;
+        top: 40px;
+        max-width: 40px;
+        z-index: 1000;
+        cursor: pointer;
+        transition: transform 0.2s ease;
+    }
+}
+
+.menu-icon img,
+.menu-icon svg {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;  /* Maintains aspect ratio */
+}
+.menu-icon:hover {
+    transform: rotate(0deg) scale(1.1);
+}
+
+.menu-icon.active {
+    transform: rotate(90deg)
+}
+
+.menu-icon.active:hover {
+    transform: rotate(90deg) scale(1.1);    
+}
+
+.settings-panel {
+    position: fixed;
+    right: -240px;
+    top: 0;
+    width: 200px;
+    height: 100%;
+    background-color: #f5f5f5;
+    padding: 20px;
+    padding-top: 40px;
+    box-shadow: -2px 0 5px rgba(0,0,0,0.1);
+    transition: 0.3s;
+    z-index: 2;
+}
+
+.settings-panel.open {
+    right: 0;
+}
+
+.setting-item {
+    margin: 15px 0;
+    max-width: 150px;
+}
+
+.setting-item select {
+    width: 100%;
+    padding: 0.5rem;
+    border-radius: 4px;
+    border: 1px solid var(--border-light);
+    background-color: var(--widget-bg-light);
+    color: var(--text-light);
+    transition: border-color 0.3s, background-color 0.3s, color 0.3s;
+}
+
+.setting-item input {
+    max-width: 89%;
+}
+
+.footer {
+    text-align: center;
+    margin-top: 2rem;
+    z-index: 1;
+}
+
+.footer a {
+    color: #666;
+    text-decoration: none;
+    transition: color 0.2s ease;
+}
+
+.footer a:hover {
+    color: var(--button-hover-light);
+}
+
+.progress-bar {
+  width: 100%;
+  background-color: var(--widget-bg-light);
+  border-radius: 4px;
+  overflow: hidden;
+  margin-top: 1rem;
+  transition: background-color 0.3s;
+}
+
+.progress {
+  height: 1rem;
+  background-color: var(--button-light);
+  width: 0;
+  transition: width 0.3s, background-color 0.3s;
+}
+
+
+.wave-container {
+  position: fixed;
+  width: 100%;
+  height: 100%;
+  top: 0;
+  left: 0;
+  overflow: hidden;
+  z-index: -1;
+}
+
+.wave {
+  position: absolute;
+  width: 200%;
+  height: 200%;
+  background: linear-gradient(
+    45deg,
+    var(--wave-color-light) 0%,
+    var(--wave-color-dark) 100%
+  );
+  opacity: 0.5;
+  border-radius: 40%;
+  animation: wave 120s infinite linear;
+  transform-origin: 50% 48%;
+  bottom: -100%;
+}
+
+.wave2 {
+  animation: wave 240s infinite linear;
+  opacity: 0.3;
+}
+
+.wave3 {
+  animation: wave 200s infinite linear;
+  opacity: 0.2;
+}
+
+.wave4 {
+  animation: wave 100s infinite linear;
+  opacity: 0.1;
+}
+
+@keyframes wave {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-color-scheme: dark) {
+  .wave {
+    background: linear-gradient(
+      45deg,
+      var(--wave-color-dark) 0%,
+      var(--wave-color-light) 100%
+    );
+  }
+}
