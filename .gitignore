@@ -2,3 +2,6 @@
 package-lock.json
 package.json
 server.js
+.cookies
+/temp
+test.py
