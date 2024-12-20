@@ -37,6 +37,10 @@ function download() {
         const progressBar = document.getElementById('progress-bar');
         const progress = document.getElementById('progress');
 
+        // select the download button
+        const downloadButton = document.getElementById('download-button');
+
+
         const reader = response.body.getReader();
         const stream = new ReadableStream({
             start(controller) {
@@ -55,6 +59,11 @@ function download() {
                             // Update progress bar
                             progress.style.display = 'block';
                             progress.style.width = `${progressPercentage}%`;
+
+                            // Disable the download button
+                            downloadButton.disabled = true;
+                            // Change the download button text
+                            downloadButton.innerText = 'Downloading...';
 
                         }
 
@@ -83,14 +92,16 @@ function download() {
 
         // Remove the progress bar after download is complete
         progress.style.display = 'none';
+
+        // Enable the download button
+        downloadButton.disabled = false;
+        // Change the download button text
+        downloadButton.innerText = 'Download';
     })
     .catch(error => {
         console.error('Error:', error);
     });
 }
-
-        
-
 
 
 function toggleMenu() {
@@ -106,6 +117,21 @@ document.getElementById('theme-select').addEventListener('change', function(e) {
 document.querySelector('.menu-icon').addEventListener('click', function() {
     this.classList.toggle('active');
 });
+
+// Add event listener for download type selction change
+document.getElementById('download-mode').addEventListener('change', function(e) {
+    const videoQuality = document.getElementById('video-quality');
+    const audioFormat = document.getElementById('audio-format');
+    if (e.target.value === 'auto') {
+        videoQuality.disabled = false;
+        audioFormat.disabled = true;
+    }
+    else {
+        videoQuality.disabled = true;
+        audioFormat.disabled = false;
+    }
+}
+);
 
 
 function get_theme_cookie() {
@@ -129,4 +155,10 @@ document.getElementById('theme-select').addEventListener('change', theme_updated
 // wait for the DOM to load before running the function
 document.addEventListener('DOMContentLoaded', function() {
     get_theme_cookie();
+    const videoQuality = document.getElementById('video-quality');
+    const audioFormat = document.getElementById('audio-format');
+    audioFormat.disabled = true;
+    videoQuality.disabled = false;
+
+
 });
