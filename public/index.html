@@ -46,6 +46,14 @@
                 max="10"
                 oninput="this.value = Math.min(Math.max(this.value, 0), 10)">
         </div>
+        <div class="setting-item">
+            <label>Pitch Notation:</label>
+            <select id="pitch-notation-select">
+                <option value="cents">Cents</option>
+                <option value="semitones">Semitones</option>
+                <option value="ratio">Ratio</option>
+            </select>
+        </div>
     </div>
 
     <div class="calculator">
@@ -56,7 +64,7 @@
         </div>
         
         <div class="input-group">
-            <label for="pitch">Pitch Change (cents):</label>
+            <label id="pitch-label" for="pitch">Cents:</label>
             <input type="number" id="pitch" placeholder="Enter pitch change">
         </div>
         

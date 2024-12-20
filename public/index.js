@@ -1,13 +1,28 @@
 // calculate new bpm based on how much the song is pitched
 
-const solve = (oldBpm, pitchChange, newBpm) => {
+const solve = (oldBpm, pitchChange, newBpm, pitchType) => {
     let result;
+
+    if (pitchType === "semitones") {
+        pitchChange = pitchChange * 100; // convert to cents for calculation
+    }
+    else if (pitchType === "ratio") {
+        pitchChange = 1200 * Math.log2(pitchChange); // convert to cents for calculation
+    }
+
+    
     if (isNaN(oldBpm)) {
         result = newBpm / (2 ** (pitchChange / 1200));
         // console.log("oldBpm: ", result);
     }
     else if (isNaN(pitchChange)) {
         result = 1200 * Math.log2(newBpm / oldBpm);
+        if (pitchType === "semitones") { 
+            result = result / 100; // convert back to semitones
+        }
+        else if (pitchType === "ratio") {
+            result = 2 ** (result / 1200); // convert back to ratio
+        }
         // console.log("pitchChange: ", result);
     }
     else if (isNaN(newBpm)) {
@@ -25,8 +40,9 @@ function calculate() {
     const old_bpm = parseFloat(document.getElementById('old-bpm').value);
     const pitch = parseFloat(document.getElementById('pitch').value);
     const new_bpm = parseFloat(document.getElementById('new-bpm').value);
+    const pitchType = document.getElementById('pitch-notation-select').value;
     // call the solve function with the three values
-    const result = solve(old_bpm, pitch, new_bpm);
+    const result = solve(old_bpm, pitch, new_bpm, pitchType);
 
     // display result in the field that was left empty out of the three
     if (result === "NaN") {
@@ -83,6 +99,35 @@ function handleInputChangeDecimal(event) {
     calculate();
 }
 
+function handleInputChangeNotation(event) {
+
+    lastEdited = [
+        "old-bpm",
+        "new-bpm",
+        "pitch"
+    ];
+    
+    // update html label to show the correct unit
+    const pitchType = event.target.value;
+    const pitchLabel = document.getElementById('pitch-label');
+    if (pitchType === "semitones") {
+        pitchLabel.innerHTML = "Semitones";
+    }
+    else if (pitchType === "cents") {
+        pitchLabel.innerHTML = "Cents";
+    }
+    else if (pitchType === "ratio") {
+        pitchLabel.innerHTML = "Ratio";
+    }
+    // set the item last in the queue to empty
+    if (lastEdited.length > 2) {
+        document.getElementById(lastEdited[2]).value = null;
+    }
+    // calculate 
+    calculate();
+}
+
+
 
 function toggleMenu() {
     const settingsPanel = document.querySelector('.settings-panel');
@@ -127,6 +172,7 @@ document.getElementById('pitch').addEventListener('input', handleInputChange);
 document.getElementById('new-bpm').addEventListener('input', handleInputChange);
 document.getElementById('decimal-places').addEventListener('input', handleInputChangeDecimal);
 document.getElementById('theme-select').addEventListener('change', theme_updated);
+document.getElementById('pitch-notation-select').addEventListener('change', handleInputChangeNotation);
 
 // wait for the DOM to load before running the function
 document.addEventListener('DOMContentLoaded', function() {
