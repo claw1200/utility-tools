@@ -175,7 +175,6 @@ button:hover {
 .footer {
     text-align: center;
     margin-top: 2rem;
-    filter: grayscale(0.3);
     z-index: 1;
 }
 
@@ -186,7 +185,7 @@ button:hover {
 }
 
 .footer a:hover {
-    color: #333;
+    color: var(--button-hover-light);
 }
 /* Dark theme */
 body.dark-theme {
@@ -226,6 +225,10 @@ body.dark-theme .setting-item select {
     background-color: var(--calc-bg-dark);
     border-color: var(--border-dark);
     color: var(--text-dark);
+}
+
+body.dark-theme .footer a:hover {
+    color: var(--button-hover-dark);
 }
 
 body.dark-theme .menu-icon {
@@ -271,6 +274,10 @@ body.green-theme .setting-item select {
     color: var(--text-green);
 }
 
+body.green-theme .footer a:hover {
+    color: var(--button-hover-green);
+}
+
 body.green-theme .menu-icon {
     filter: invert(1);
 }
@@ -312,6 +319,10 @@ body.orange-theme .setting-item select {
     background-color: var(--calc-bg-orange);
     border-color: var(--border-orange);
     color: var(--text-orange);
+}
+
+body.orange-theme .footer a:hover {
+    color: var(--button-hover-orange);
 }
 
 body.orange-theme .menu-icon {
