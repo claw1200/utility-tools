@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Tempo / Pitch Calculator</title>
+    <link rel="stylesheet" type="text/css" href="index.css">
+    <link rel="stylesheet" type="text/css" href="/themes.css">
+    <link rel="icon" href="./favicon.ico"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="A simple calculator to convert between BPM and pitch change in cents.">
+    <meta name="keywords" content="tempo, pitch, calculator, bpm, cents, music">
+    <meta name="author" content="claw">
+    <meta property="og:title" content="Tempo / Pitch Calculator">
+    <meta property="og:description" content="A simple calculator to convert between BPM and pitch change in cents.">
+    <meta property="og:url" content="https://github.com/CLAW1200/tempo-pitch-calculator">
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="Tempo / Pitch Calculator">
+    <meta name="twitter:card" content="summary">
+    <meta name="twitter:title" content="Tempo / Pitch Calculator">
+    <meta name="twitter:description" content="A simple calculator to convert between BPM and pitch change in cents.">
+</head>
+<body>
+    
+    <div class="menu-icon" onclick="toggleMenu()">
+        <img src="menu.svg" alt="Menu" id="menu-icon">
+    </div>
+    
+    <div class="settings-panel">
+        <h2>Settings</h2>
+        <div class="setting-item">
+            <label>Theme:</label>
+            <select id="theme-select">
+                <option value="light">Light</option>
+                <option value="dark">Dark</option>
+                <option value="green">Green</option>
+                <option value="orange">Orange</option>
+                <option value="purple">Purple</option>
+                <option value="red">Red</option>
+            </select>
+        </div>
+        <div class="setting-item">
+            <label>Decimal Places:</label>
+                <input type="number" 
+                id="decimal-places" 
+                value="3" 
+                min="0" 
+                max="10"
+                oninput="this.value = Math.min(Math.max(this.value, 0), 10)">
+        </div>
+        <div class="setting-item">
+            <label>Pitch Notation:</label>
+            <select id="pitch-notation-select">
+                <option value="cents">Cents</option>
+                <option value="semitones">Semitones</option>
+                <option value="ratio">Ratio</option>
+            </select>
+        </div>
+    </div>
+
+    <div class="widget">
+        <h1>Tempo / Pitch Calculator</h1>    
+        <div class="input-group">
+            <label for="old-bpm">Original BPM:</label>
+            <input type="number" id="old-bpm" placeholder="Enter original BPM">
+        </div>
+        
+        <div class="input-group">
+            <label id="pitch-label" for="pitch">Cents:</label>
+            <input type="number" id="pitch" placeholder="Enter pitch change">
+        </div>
+        
+        <div class="input-group">
+            <label for="new-bpm">New BPM:</label>
+            <input type="number" id="new-bpm" placeholder="Enter new BPM">
+        </div>    
+        <button onclick="solve()">Calculate</button>
+    </div>
+
+    <div class="wave-container">
+        <div class="wave"></div>
+        <div class="wave wave2"></div>
+        <div class="wave wave3"></div>
+        <div class="wave wave4"></div>
+    </div>
+
+    <div class="footer">
+        <p>created by <a href="https://github.com/claw1200">claw</a></p>
+    </div>
+
+
+</body>
+<script src="index.js"></script>
+</html>

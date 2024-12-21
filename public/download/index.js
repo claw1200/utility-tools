@@ -4,6 +4,11 @@ function download() {
     const video_quality = document.getElementById('video-quality').value;
     const audio_format = document.getElementById('audio-format').value;
 
+    const download_button = document.getElementById('download-button');
+
+    download_button.disabled = true;
+    download_button.innerText = 'Downloading...';
+
     fetch('/download_node', {
         method: 'POST',
         headers: {
@@ -30,15 +35,14 @@ function download() {
         if (!contentLength) {
             console.warn('Content-Length header is missing');
         }
-        const totalSize = contentLength ? parseInt(contentLength, 10) : 0;
+        const total_size = contentLength ? parseInt(contentLength, 10) : 0;
         let downloaded = 0;
 
         // select the progress bar element
-        const progressBar = document.getElementById('progress-bar');
         const progress = document.getElementById('progress');
 
         // select the download button
-        const downloadButton = document.getElementById('download-button');
+        const download_button = document.getElementById('download-button');
 
 
         const reader = response.body.getReader();
@@ -53,17 +57,17 @@ function download() {
                         }
 
                         downloaded += value.length;
-                        if (totalSize) {
-                            const progressPercentage = ((downloaded / totalSize) * 100).toFixed(2);
-                            console.log(`Progress: ${progressPercentage}%`);
+                        if (total_size) {
+                            const progress_percentage = ((downloaded / total_size) * 100).toFixed(2);
+                            console.log(`Progress: ${progress_percentage}%`);
                             // Update progress bar
                             progress.style.display = 'block';
-                            progress.style.width = `${progressPercentage}%`;
+                            progress.style.width = `${progress_percentage}%`;
 
                             // Disable the download button
-                            downloadButton.disabled = true;
+                            download_button.disabled = true;
                             // Change the download button text
-                            downloadButton.innerText = 'Downloading...';
+                            download_button.innerText = 'Downloading...';
 
                         }
 
@@ -94,9 +98,9 @@ function download() {
         progress.style.display = 'none';
 
         // Enable the download button
-        downloadButton.disabled = false;
+        download_button.disabled = false;
         // Change the download button text
-        downloadButton.innerText = 'Download';
+        download_button.innerText = 'Download';
     })
     .catch(error => {
         console.error('Error:', error);

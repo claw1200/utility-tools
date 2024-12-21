@@ -1,7 +1,7 @@
 
 :root {
     --bg-light: #f0f0f0;
-    --calc-bg-light: #ffffff;
+    --widget-bg-light: #ffffff;
     --text-light: #333333;
     --border-light: #cccccc;
     --button-light: #007bff;
@@ -18,19 +18,62 @@ body {
     transition: background-color 0.3s, color 0.3s;
 }
 
-.calculator {
-    max-width: 400px;
-    margin: 2rem auto;
+h1 {
+    text-align: center;
+    margin-top: 2rem;
+}
+
+.container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.widget {
+    max-width: 200px;
+    min-width: 200px;
+    max-height: 200px;
+    min-height: 200px;
+    margin: 2rem;
     padding: 2rem;
     border-radius: 8px;
     box-shadow: 0 0 10px rgba(0,0,0,0.1);
-    background-color: var(--calc-bg-light);
-    transition: background-color 0.3s;
+    background-color: var(--widget-bg-light);
+    transition: background-color 0.3s, box-shadow 0.3s, transform 0.3s;
+}
+
+.widget:hover {
+    box-shadow: 0 0 20px rgba(0,0,0,0.2);
+    transform: scale(1.05);
 }
 
 .input-group {
     margin-bottom: 1rem;
 }
+
+.extra-inputs-container {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 1rem;
+    margin-bottom: 1rem;
+}
+
+.extra-inputs-container input {
+    width: 48%;
+    background-color: var(--widget-bg-light);
+}
+
+
+.extra-inputs-container select {
+  width: 100%;
+  padding: 0.5rem;
+  border-radius: 4px;
+  border: 1px solid var(--border-light);
+  background-color: var(--widget-bg-light);
+  color: var(--text-light);
+  transition: border-color 0.3s, background-color 0.3s, color 0.3s;
+}
+
 
 label {
     display: block;
@@ -42,7 +85,7 @@ input {
     padding: 0.5rem;
     border: 1px solid var(--border-light);
     border-radius: 4px;
-    background-color: var(--calc-bg-light);
+    background-color: var(--widget-bg-light);
     color: var(--text-light);
     transition: border-color 0.3s, background-color 0.3s, color 0.3s;
 }
@@ -57,6 +100,10 @@ button {
     cursor: pointer;
     margin-top: 1rem;
     transition: background-color 0.3s;
+}
+
+button:disabled {
+    filter: grayscale(0.5);
 }
 
 button:hover {
@@ -77,7 +124,7 @@ button:hover {
 }
 
 @media (max-width: 500px) {
-    .calculator {
+    .widgetulator {
         position: relative;  /* Add this to make it a positioning context */
     }
     
@@ -138,7 +185,7 @@ button:hover {
     padding: 0.5rem;
     border-radius: 4px;
     border: 1px solid var(--border-light);
-    background-color: var(--calc-bg-light);
+    background-color: var(--widget-bg-light);
     color: var(--text-light);
     transition: border-color 0.3s, background-color 0.3s, color 0.3s;
 }
@@ -162,6 +209,23 @@ button:hover {
 .footer a:hover {
     color: var(--button-hover-light);
 }
+
+.progress-bar {
+  width: 100%;
+  background-color: var(--widget-bg-light);
+  border-radius: 4px;
+  overflow: hidden;
+  margin-top: 1rem;
+  transition: background-color 0.3s;
+}
+
+.progress {
+  height: 1rem;
+  background-color: var(--button-light);
+  width: 0;
+  transition: width 0.3s, background-color 0.3s;
+}
+
 
 .wave-container {
   position: fixed;

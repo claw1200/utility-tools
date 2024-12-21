@@ -1,10 +1,9 @@
-
-
 :root {
     /* dark theme */
     --bg-dark: #1a1a1a;
-    --calc-bg-dark: #2d2d2d;
+    --widget-bg-dark: #2d2d2d;
     --text-dark: #ffffff;
+    --text-button-dark: #ffffff;
     --border-dark: #404040;
     --button-dark: #2196F3;
     --button-hover-dark: #1976D2;
@@ -12,8 +11,9 @@
 
     /* green theme */
     --bg-green: #131f17;
-    --calc-bg-green: #2d2d2d;
+    --widget-bg-green: #2d2d2d;
     --text-green: #00ff37;
+    --text-button-green: #2d2d2d;
     --border-green: #404040;
     --button-green: #1dd144;
     --button-hover-green: #21f34f;
@@ -21,8 +21,9 @@
 
     /* orange theme */
     --bg-orange: #1f1b13;
-    --calc-bg-orange: #2d2d2d;
+    --widget-bg-orange: #2d2d2d;
     --text-orange: #ff8c00;
+    --text-button-orange: #2d2d2d;
     --border-orange: #404040;
     --button-orange: #ff8c00;
     --button-hover-orange: #ff9f00;
@@ -30,8 +31,9 @@
 
     /* purple theme */
     --bg-purple: #1a131f;
-    --calc-bg-purple: #2d2d2d;
+    --widget-bg-purple: #2d2d2d;
     --text-purple: #d900ff;
+    --text-button-purple: #2d2d2d;
     --border-purple: #404040;
     --button-purple: #9c27b0;
     --button-hover-purple: #ab47bc;
@@ -40,8 +42,9 @@
    
     /* red theme */
     --bg-red: #1a131f;
-    --calc-bg-red: #2d2d2d;
+    --widget-bg-red: #2d2d2d;
     --text-red: #ff0000;
+    --text-button-red: #2d2d2d;
     --border-red: #404040;
     --button-red: #ff0000;
     --button-hover-red: #ff3333;
@@ -54,13 +57,13 @@ body.dark-theme {
     color: var(--text-dark);
 }
 
-body.dark-theme .calculator {
-    background-color: var(--calc-bg-dark);
+body.dark-theme .widget {
+    background-color: var(--widget-bg-dark);
     box-shadow: 0 0 10px rgba(0,0,0,0.3);
 }
 
 body.dark-theme input {
-    background-color: var(--calc-bg-dark);
+    background-color: var(--widget-bg-dark);
     border-color: var(--border-dark);
     color: var(--text-dark);
 }
@@ -78,12 +81,12 @@ body.dark-theme .bar {
 }
 
 body.dark-theme .settings-panel {
-    background-color: var(--calc-bg-dark);
+    background-color: var(--widget-bg-dark);
     color: var(--text-dark);
 }
 
 body.dark-theme .setting-item select {
-    background-color: var(--calc-bg-dark);
+    background-color: var(--widget-bg-dark);
     border-color: var(--border-dark);
     color: var(--text-dark);
 }
@@ -96,19 +99,40 @@ body.dark-theme .menu-icon {
     filter: invert(1);
 }
 
+body.dark-theme .progress-bar {
+    background-color: var(--widget-bg-dark);
+}
+
+body.dark-theme .progress {
+    background-color: var(--button-dark);
+}
+
+body.dark-theme .extra-inputs-container input {
+    background-color: var(--widget-bg-dark);
+    border-color: var(--border-dark);
+    color: var(--text-dark);
+}
+
+body.dark-theme .extra-inputs-container select {
+    background-color: var(--widget-bg-dark);
+    border-color: var(--border-dark);
+    color: var(--text-dark);
+}
+
+
 /* Green theme */
 body.green-theme {
     background-color: var(--bg-green);
     color: var(--text-green);
 }
 
-body.green-theme .calculator {
-    background-color: var(--calc-bg-green);
+body.green-theme .widget {
+    background-color: var(--widget-bg-green);
     box-shadow: 0 0 10px rgba(0,0,0,0.3);
 }
 
 body.green-theme input {
-    background-color: var(--calc-bg-green);
+    background-color: var(--widget-bg-green);
     border-color: var(--border-green);
     color: var(--text-green);
 }
@@ -126,12 +150,12 @@ body.green-theme .bar {
 }
 
 body.green-theme .settings-panel {
-    background-color: var(--calc-bg-green);
+    background-color: var(--widget-bg-green);
     color: var(--text-green);
 }
 
 body.green-theme .setting-item select {
-    background-color: var(--calc-bg-green);
+    background-color: var(--widget-bg-green);
     border-color: var(--border-green);
     color: var(--text-green);
 }
@@ -144,19 +168,41 @@ body.green-theme .menu-icon {
     filter: invert(1);
 }
 
+body.green-theme .progress-bar {
+    background-color: var(--widget-bg-green);
+}
+
+body.green-theme .progress {
+    background-color: var(--button-green);
+}
+
+body.green-theme .extra-inputs-container input {
+    background-color: var(--widget-bg-green);
+    border-color: var(--border-green);
+    color: var(--text-green);
+}
+
+body.green-theme .extra-inputs-container select {
+    background-color: var(--widget-bg-green);
+    border-color: var(--border-green);
+    color: var(--text-green);
+}
+
+
+
 /* Orange theme */
 body.orange-theme {
     background-color: var(--bg-orange);
     color: var(--text-orange);
 }
 
-body.orange-theme .calculator {
-    background-color: var(--calc-bg-orange);
+body.orange-theme .widget {
+    background-color: var(--widget-bg-orange);
     box-shadow: 0 0 10px rgba(0,0,0,0.3);
 }
 
 body.orange-theme input {
-    background-color: var(--calc-bg-orange);
+    background-color: var(--widget-bg-orange);
     border-color: var(--border-orange);
     color: var(--text-orange);
 }
@@ -174,12 +220,12 @@ body.orange-theme .bar {
 }
 
 body.orange-theme .settings-panel {
-    background-color: var(--calc-bg-orange);
+    background-color: var(--widget-bg-orange);
     color: var(--text-orange);
 }
 
 body.orange-theme .setting-item select {
-    background-color: var(--calc-bg-orange);
+    background-color: var(--widget-bg-orange);
     border-color: var(--border-orange);
     color: var(--text-orange);
 }
@@ -192,19 +238,40 @@ body.orange-theme .menu-icon {
     filter: invert(1);
 }
 
+body.orange-theme .progress-bar {
+    background-color: var(--widget-bg-orange);
+}
+
+body.orange-theme .progress {
+    background-color: var(--button-orange);
+}
+
+body.orange-theme .extra-inputs-container input {
+    background-color: var(--widget-bg-orange);
+    border-color: var(--border-orange);
+    color: var(--text-orange);
+}
+
+body.orange-theme .extra-inputs-container select {
+    background-color: var(--widget-bg-orange);
+    border-color: var(--border-orange);
+    color: var(--text-orange);
+}
+
+
 /* Purple theme */
 body.purple-theme {
     background-color: var(--bg-purple);
     color: var(--text-purple);
 }
 
-body.purple-theme .calculator {
-    background-color: var(--calc-bg-purple);
+body.purple-theme .widget {
+    background-color: var(--widget-bg-purple);
     box-shadow: 0 0 10px rgba(0,0,0,0.3);
 }
 
 body.purple-theme input {
-    background-color: var(--calc-bg-purple);
+    background-color: var(--widget-bg-purple);
     border-color: var(--border-purple);
     color: var(--text-purple);
 }
@@ -222,12 +289,12 @@ body.purple-theme .bar {
 }
 
 body.purple-theme .settings-panel {
-    background-color: var(--calc-bg-purple);
+    background-color: var(--widget-bg-purple);
     color: var(--text-purple);
 }
 
 body.purple-theme .setting-item select {
-    background-color: var(--calc-bg-purple);
+    background-color: var(--widget-bg-purple);
     border-color: var(--border-purple);
     color: var(--text-purple);
 }
@@ -240,6 +307,28 @@ body.purple-theme .menu-icon {
     filter: invert(1);
 }
 
+body.purple-theme .progress-bar {
+    background-color: var(--widget-bg-purple);
+}
+
+body.purple-theme .progress {
+    background-color: var(--button-purple);
+}
+
+body.purple-theme .extra-inputs-container input {
+    background-color: var(--widget-bg-purple);
+    border-color: var(--border-purple);
+    color: var(--text-purple);
+}
+
+body.purple-theme .extra-inputs-container select {
+    background-color: var(--widget-bg-purple);
+    border-color: var(--border-purple);
+    color: var(--text-purple);
+}
+
+
+
 /* Red theme */
 
 body.red-theme {
@@ -247,13 +336,13 @@ body.red-theme {
     color: var(--text-red);
 }
 
-body.red-theme .calculator {
-    background-color: var(--calc-bg-red);
+body.red-theme .widget {
+    background-color: var(--widget-bg-red);
     box-shadow: 0 0 10px rgba(0,0,0,0.3);
 }
 
 body.red-theme input {
-    background-color: var(--calc-bg-red);
+    background-color: var(--widget-bg-red);
     border-color: var(--border-red);
     color: var(--text-red);
 }
@@ -271,12 +360,12 @@ body.red-theme .bar {
 }
 
 body.red-theme .settings-panel {
-    background-color: var(--calc-bg-red);
+    background-color: var(--widget-bg-red);
     color: var(--text-red);
 }
 
 body.red-theme .setting-item select {
-    background-color: var(--calc-bg-red);
+    background-color: var(--widget-bg-red);
     border-color: var(--border-red);
     color: var(--text-red);
 }
@@ -288,5 +377,28 @@ body.red-theme .footer a:hover {
 body.red-theme .menu-icon {
     filter: invert(1);
 }
+
+body.red-theme .progress-bar {
+    background-color: var(--widget-bg-red);
+}
+
+body.red-theme .progress {
+    background-color: var(--button-red);
+}
+
+body.red-theme .extra-inputs-container input {
+    background-color: var(--widget-bg-red);
+    border-color: var(--border-red);
+    color: var(--text-red);
+}
+
+body.red-theme .extra-inputs-container select {
+    background-color: var(--widget-bg-red);
+    border-color: var(--border-red);
+    color: var(--text-red);
+}
+
+
+
 
 
