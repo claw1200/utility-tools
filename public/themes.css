@@ -13,7 +13,7 @@
     --bg-green: #131f17;
     --widget-bg-green: #2d2d2d;
     --text-green: #00ff37;
-    --text-button-green: #2d2d2d;
+    --text-button-green: #000000;
     --border-green: #404040;
     --button-green: #1dd144;
     --button-hover-green: #21f34f;
@@ -23,7 +23,7 @@
     --bg-orange: #1f1b13;
     --widget-bg-orange: #2d2d2d;
     --text-orange: #ff8c00;
-    --text-button-orange: #2d2d2d;
+    --text-button-orange: #000000;
     --border-orange: #404040;
     --button-orange: #ff8c00;
     --button-hover-orange: #ff9f00;
@@ -33,7 +33,7 @@
     --bg-purple: #1a131f;
     --widget-bg-purple: #2d2d2d;
     --text-purple: #d900ff;
-    --text-button-purple: #2d2d2d;
+    --text-button-purple: #000000;
     --border-purple: #404040;
     --button-purple: #9c27b0;
     --button-hover-purple: #ab47bc;
@@ -44,7 +44,7 @@
     --bg-red: #1a131f;
     --widget-bg-red: #2d2d2d;
     --text-red: #ff0000;
-    --text-button-red: #2d2d2d;
+    --text-button-red: #000000;
     --border-red: #404040;
     --button-red: #ff0000;
     --button-hover-red: #ff3333;
@@ -52,6 +52,12 @@
 }
 
 /* Dark theme */
+
+.dark-theme ::selection {
+    color: var(--text-dark);
+    background: var(--button-dark);
+}
+
 body.dark-theme {
     background-color: var(--bg-dark);
     color: var(--text-dark);
@@ -70,6 +76,7 @@ body.dark-theme input {
 
 body.dark-theme button {
     background-color: var(--button-dark);
+    color: var(--text-button-dark);
 }
 
 body.dark-theme button:hover {
@@ -121,6 +128,12 @@ body.dark-theme .extra-inputs-container select {
 
 
 /* Green theme */
+
+green-theme ::selection {
+    color: var(--text-green);
+    background: var(--button-green);
+}
+
 body.green-theme {
     background-color: var(--bg-green);
     color: var(--text-green);
@@ -139,6 +152,7 @@ body.green-theme input {
 
 body.green-theme button {
     background-color: var(--button-green);
+    color: var(--text-button-green);
 }
 
 body.green-theme button:hover {
@@ -188,9 +202,13 @@ body.green-theme .extra-inputs-container select {
     color: var(--text-green);
 }
 
-
-
 /* Orange theme */
+
+orange-theme ::selection {
+    color: var(--text-orange);
+    background: var(--button-orange);
+}
+
 body.orange-theme {
     background-color: var(--bg-orange);
     color: var(--text-orange);
@@ -209,6 +227,7 @@ body.orange-theme input {
 
 body.orange-theme button {
     background-color: var(--button-orange);
+    color: var(--text-button-orange);
 }
 
 body.orange-theme button:hover {
@@ -258,8 +277,13 @@ body.orange-theme .extra-inputs-container select {
     color: var(--text-orange);
 }
 
-
 /* Purple theme */
+
+purple-theme ::selection {
+    color: var(--text-purple);
+    background: var(--button-purple);
+}
+
 body.purple-theme {
     background-color: var(--bg-purple);
     color: var(--text-purple);
@@ -278,6 +302,7 @@ body.purple-theme input {
 
 body.purple-theme button {
     background-color: var(--button-purple);
+    color: var(--text-button-purple);
 }
 
 body.purple-theme button:hover {
@@ -327,9 +352,12 @@ body.purple-theme .extra-inputs-container select {
     color: var(--text-purple);
 }
 
-
-
 /* Red theme */
+
+red-theme ::selection {
+    color: var(--text-red);
+    background: var(--button-red);
+}
 
 body.red-theme {
     background-color: var(--bg-red);
@@ -349,6 +377,7 @@ body.red-theme input {
 
 body.red-theme button {
     background-color: var(--button-red);
+    color: var(--text-button-red);
 }
 
 body.red-theme button:hover {
@@ -397,8 +426,3 @@ body.red-theme .extra-inputs-container select {
     border-color: var(--border-red);
     color: var(--text-red);
 }
-
-
-
-
-

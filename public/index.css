@@ -1,13 +1,21 @@
 
+
 :root {
     --bg-light: #f0f0f0;
     --widget-bg-light: #ffffff;
     --text-light: #333333;
+    --text-button-light: #ffffff;
     --border-light: #cccccc;
     --button-light: #007bff;
     --button-hover-light: #0056b3;    
     --wave-color-light: rgba(255, 255, 255, 0.3);
 }
+
+::selection {
+  color: var(--text-light);
+  background: var(--button-light);
+}
+
 
 body {
     font-family: Arial, sans-serif;
@@ -17,6 +25,7 @@ body {
     color: var(--text-light);
     transition: background-color 0.3s, color 0.3s;
 }
+
 
 h1 {
     text-align: center;
@@ -36,6 +45,7 @@ h1 {
     min-height: 200px;
     margin: 2rem;
     padding: 2rem;
+    padding-top: 1rem;
     border-radius: 8px;
     box-shadow: 0 0 10px rgba(0,0,0,0.1);
     background-color: var(--widget-bg-light);
@@ -99,7 +109,7 @@ button {
     border-radius: 4px;
     cursor: pointer;
     margin-top: 1rem;
-    transition: background-color 0.3s;
+    transition: background-color 0.3s, color 0.3s;
 }
 
 button:disabled {
@@ -109,6 +119,7 @@ button:disabled {
 button:hover {
     background-color: var(--button-hover-light);
 }
+
 .menu-icon {
     position: fixed;
     right: 20px;
@@ -169,6 +180,10 @@ button:hover {
     box-shadow: -2px 0 5px rgba(0,0,0,0.1);
     transition: 0.3s;
     z-index: 2;
+}
+
+.settings-panel h2 {
+    margin-bottom: 0rem;
 }
 
 .settings-panel.open {

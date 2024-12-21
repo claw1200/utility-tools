@@ -124,6 +124,11 @@ button:hover {
     z-index: 2;
 }
 
+.settings-panel h2 {
+  margin-bottom: 0rem;
+}
+
+
 .settings-panel.open {
     right: 0;
 }
