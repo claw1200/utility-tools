@@ -1,4 +1,4 @@
-# A Simple Web Tools by Claw
+# Simple Web Tools by Claw
 
 ## Try it online [here](https://tools.utilitybelt.app/)
 
