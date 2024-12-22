@@ -164,6 +164,8 @@ function theme_updated() {
     // called when theme is updated
     const theme = document.getElementById('theme-select').value;
     localStorage.setItem('theme', theme);
+    document.body.classList.add('loaded');
+
 }
 
 // Add event listeners
@@ -177,4 +179,12 @@ document.getElementById('pitch-notation-select').addEventListener('change', hand
 // wait for the DOM to load before running the function
 document.addEventListener('DOMContentLoaded', function() {
     get_theme_cookie();
+    document.body.classList.add('loaded');
 });
+
+// window.addEventListener('pageshow', function(event) {
+//     if (event.persisted) {
+//         window.location.reload();
+//     }
+// }
+// );

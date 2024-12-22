@@ -7,7 +7,7 @@ import logging
 
 app = Flask(__name__)
 
-async def download_media_ytdlp(url, download_mode, video_quality, audio_format):
+async def download_media_ytdlp(url, download_mode, video_quality, video_format, audio_format):
     # Configure yt-dlp options
     ytdl_options = {
         "format": "best",
@@ -26,6 +26,8 @@ async def download_media_ytdlp(url, download_mode, video_quality, audio_format):
         video_quality = "360"
     if audio_format == "auto":
         audio_format = "mp3"
+    if video_format == "auto":
+        video_format = "mp4"
 
     if download_mode == "audio":
         ytdl_options["format"] = f"""
@@ -37,7 +39,7 @@ async def download_media_ytdlp(url, download_mode, video_quality, audio_format):
 
     if download_mode == "auto":
         ytdl_options["format"] = f"""
-        bestvideo[vcodec=h264][height<={video_quality}]+bestaudio[acodec=aac]/
+        bestvideo[vcodec=h264][height<={video_quality}]+bestaudio[acodec={video_format}]/
         bestvideo[vcodec=h264][height<={video_quality}]+bestaudio/
         bestvideo[vcodec=vp9][ext=webm][height<={video_quality}]+bestaudio[ext=webm]/
         bestvideo[vcodec=vp9][ext=webm][height<={video_quality}]+bestaudio/
@@ -68,10 +70,11 @@ def download_python():
     logging.info("Received download request")
     url = request.args.get('url')
     download_mode = request.args.get('download_mode')
-    video_quality = request.args.get('video_quality') 
+    video_quality = request.args.get('video_quality')
+    video_format = request.args.get('video_format')
     audio_format = request.args.get('audio_format')
 
-    filepath = asyncio.run(download_media_ytdlp(url, download_mode, video_quality, audio_format))
+    filepath = asyncio.run(download_media_ytdlp(url, download_mode, video_quality, video_format, audio_format))
     
     output = jsonify({
         "filepath": filepath,

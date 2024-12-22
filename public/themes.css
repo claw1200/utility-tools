@@ -3,6 +3,7 @@
     --bg-dark: #1a1a1a;
     --widget-bg-dark: #2d2d2d;
     --text-dark: #ffffff;
+    --text-secondary-dark: #dddddd;
     --text-button-dark: #ffffff;
     --border-dark: #404040;
     --button-dark: #2196F3;
@@ -13,6 +14,7 @@
     --bg-green: #131f17;
     --widget-bg-green: #2d2d2d;
     --text-green: #00ff37;
+    --text-secondary-green: #00dd30;
     --text-button-green: #000000;
     --border-green: #404040;
     --button-green: #1dd144;
@@ -23,6 +25,7 @@
     --bg-orange: #1f1b13;
     --widget-bg-orange: #2d2d2d;
     --text-orange: #ff8c00;
+    --text-secondary-orange: #d18100;
     --text-button-orange: #000000;
     --border-orange: #404040;
     --button-orange: #ff8c00;
@@ -33,6 +36,7 @@
     --bg-purple: #1a131f;
     --widget-bg-purple: #2d2d2d;
     --text-purple: #d900ff;
+    --text-secondary-purple: #b800e0;
     --text-button-purple: #000000;
     --border-purple: #404040;
     --button-purple: #9c27b0;
@@ -44,6 +48,7 @@
     --bg-red: #1a131f;
     --widget-bg-red: #2d2d2d;
     --text-red: #ff0000;
+    --text-secondary-red: #ee0000;
     --text-button-red: #000000;
     --border-red: #404040;
     --button-red: #ff0000;
@@ -66,6 +71,10 @@ body.dark-theme {
 body.dark-theme .widget {
     background-color: var(--widget-bg-dark);
     box-shadow: 0 0 10px rgba(0,0,0,0.3);
+}
+
+body.dark-theme .widget p{
+    color: var(--text-secondary-dark);
 }
 
 body.dark-theme input {
@@ -144,6 +153,10 @@ body.green-theme .widget {
     box-shadow: 0 0 10px rgba(0,0,0,0.3);
 }
 
+body.green-theme .widget p{
+    color: var(--text-secondary-green);
+}
+
 body.green-theme input {
     background-color: var(--widget-bg-green);
     border-color: var(--border-green);
@@ -217,6 +230,10 @@ body.orange-theme {
 body.orange-theme .widget {
     background-color: var(--widget-bg-orange);
     box-shadow: 0 0 10px rgba(0,0,0,0.3);
+}
+
+body.orange-theme .widget p{
+    color: var(--text-secondary-orange);
 }
 
 body.orange-theme input {
@@ -294,6 +311,10 @@ body.purple-theme .widget {
     box-shadow: 0 0 10px rgba(0,0,0,0.3);
 }
 
+body.purple-theme .widget p{
+    color: var(--text-secondary-purple);
+}
+
 body.purple-theme input {
     background-color: var(--widget-bg-purple);
     border-color: var(--border-purple);
@@ -367,6 +388,10 @@ body.red-theme {
 body.red-theme .widget {
     background-color: var(--widget-bg-red);
     box-shadow: 0 0 10px rgba(0,0,0,0.3);
+}
+
+body.red-theme .widget p{
+    color: var(--text-secondary-red);
 }
 
 body.red-theme input {

@@ -26,43 +26,43 @@
     </div>
     
     <div class="settings-panel">
-        <h2>Settings</h2>
+        <h2>settings</h2>
         <div class="setting-item">
-            <label>Theme:</label>
+            <label>theme:</label>
             <select id="theme-select">
-                <option value="light">Light</option>
-                <option value="dark">Dark</option>
-                <option value="green">Green</option>
-                <option value="orange">Orange</option>
-                <option value="purple">Purple</option>
+                <option value="light">light</option>
+                <option value="dark">dark</option>
+                <option value="green">green</option>
+                <option value="orange">orange</option>
+                <option value="purple">purple</option>
             </select>
         </div>
 
-        <h2>Links</h2>
+        <h2>links</h2>
         <div class="setting-links">
-            <button onclick="window.location.href='https://discord.gg/racJC3KmRH'">Discord</button>
-            <button onclick="window.location.href='https://github.com/claw1200'">GitHub</button>
+            <button onclick="window.location.href='https://discord.gg/racJC3KmRH'">discord</button>
+            <button onclick="window.location.href='https://github.com/claw1200'">github</button>
         </div>
     </div>
 
     <div class="widget">
-        <h1>Simple Downloader (Beta)</h1>    
+        <h1>simple downloader (beta)</h1>    
         <div class="input-group">
-            <label for="url-input-box">URL:</label>
-            <input type="string" id="url-input-box" placeholder="Enter URL">
+            <label for="url-input-box">url:</label>
+            <input type="string" id="url-input-box" placeholder="enter url">
 
             <div class="extra-inputs-container">
 
                 <div class="extra-input">
-                    <label>Download Mode</label>
+                    <label>download Mode</label>
                     <select id="download-mode">
-                        <option value="auto">Video</option>
-                        <option value="audio">Audio</option>
+                        <option value="auto">video</option>
+                        <option value="audio">audio</option>
                     </select>
                 </div>
 
                 <div class="extra-input">
-                    <label>Video Quality</label>
+                    <label>video quality</label>
                     <select id="video-quality">
                         <option value="144">144p</option>
                         <option value="240">240p</option>
@@ -74,20 +74,35 @@
                 </div>
 
                 <div class="extra-input">
-                    <label>Audio Format</label>
+                    <label>video format</label>
+                    <select id="video-format">
+                        <option value="mp4">mp4</option>
+                        <option value="webm">webm</option>
+                        <option value="mkv">mkv</option>
+                        <option value="avi">avi</option>
+                        <option value="flv">flv</option>
+                        <option value="mov">mov</option>
+                        <option value="wmv">wmv</option>
+                        <option value="3gp">3gp</option>
+                    </select>
+                </div>
+
+                <div class="extra-input">
+                    <label>audio format</label>
                     <select id="audio-format">
-                        <option value="webm">WEBM</option>
-                        <option value="mp3">MP3</option>
-                        <option value="m4a">M4A</option>
-                        <option value="wav">WAV</option>
-                        <option value="aac">AAC</option>
-                        <option value="ogg">OGG</option>
-                        <option value="flac">FLAC</option>
+                        <option value="webm">webm</option>
+                        <option value="opus">opus</option>
+                        <option value="mp3">mp3</option>
+                        <option value="m4a">m4a</option>
+                        <option value="wav">wav</option>
+                        <option value="aac">aac</option>
+                        <option value="ogg">ogg</option>
+                        <option value="flac">flac</option>
                     </select>
                 </div>
             </div>
         </div>
-        <button id="download-button" onclick="download()">Download</button>
+        <button id="download-button" onclick="download()">download</button>
 
         <div class="progress-bar id progress-bar">
             <div class="progress" id="progress" style="display: none;"></div>

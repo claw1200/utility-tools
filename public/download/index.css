@@ -3,6 +3,7 @@
     --bg-light: #f0f0f0;
     --widget-bg-light: #ffffff;
     --text-light: #333333;
+    --text-secondary-light: #555555;
     --border-light: #cccccc;
     --button-light: #007bff;
     --button-hover-light: #0056b3;    
@@ -13,13 +14,18 @@ body {
     font-family: Arial, sans-serif;
     margin: 0;
     padding: 0;
-    background-color: var(--bg-light);
+    background-color: black;
     color: var(--text-light);
     transition: background-color 0.3s, color 0.3s;
+    zoom: 1.4;
+}
+
+body.loaded {
+    background-color: var(--bg-light);
 }
 
 .widget {
-    max-width: 400px;
+    max-width: 450px;
     margin: 2rem auto;
     padding: 2rem;
     border-radius: 8px;
@@ -53,7 +59,8 @@ body {
   border: 1px solid var(--border-light);
   background-color: var(--widget-bg-light);
   color: var(--text-light);
-  transition: border-color 0.3s, background-color 0.3s, color 0.3s;
+  outline-style: none;
+  transition: border-color 0.3s, background-color 0.3s, color 0.3s, filter 0.3s;
 }
 
 
@@ -81,7 +88,7 @@ button {
     border-radius: 4px;
     cursor: pointer;
     margin-top: 1rem;
-    transition: background-color 0.3s;
+    transition: background-color 0.3s, color 0.3s;
 }
 
 button:disabled {
@@ -173,6 +180,7 @@ button:hover {
     border: 1px solid var(--border-light);
     background-color: var(--widget-bg-light);
     color: var(--text-light);
+    outline-style: none;
     transition: border-color 0.3s, background-color 0.3s, color 0.3s;
 }
 

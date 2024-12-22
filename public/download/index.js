@@ -2,6 +2,7 @@ function download() {
     const url = document.getElementById('url-input-box').value;
     const download_mode = document.getElementById('download-mode').value;
     const video_quality = document.getElementById('video-quality').value;
+    const video_format = document.getElementById('video-format').value;
     const audio_format = document.getElementById('audio-format').value;
 
     const download_button = document.getElementById('download-button');
@@ -18,6 +19,7 @@ function download() {
             url: url,
             download_mode: download_mode,
             video_quality: video_quality,
+            video_format: video_format,
             audio_format: audio_format,
         }),
     })
@@ -125,14 +127,23 @@ document.querySelector('.menu-icon').addEventListener('click', function() {
 // Add event listener for download type selction change
 document.getElementById('download-mode').addEventListener('change', function(e) {
     const videoQuality = document.getElementById('video-quality');
+    const videoFormat = document.getElementById('video-format');
     const audioFormat = document.getElementById('audio-format');
     if (e.target.value === 'auto') {
         videoQuality.disabled = false;
+        videoQuality.style.filter = 'none';
+        videoFormat.disabled = false;
+        videoFormat.style.filter = 'none';
         audioFormat.disabled = true;
+        audioFormat.style.filter = 'grayscale(1)';
     }
     else {
         videoQuality.disabled = true;
+        videoQuality.style.filter = 'grayscale(1)';
+        videoFormat.disabled = true;
+        videoFormat.style.filter = 'grayscale(1)';
         audioFormat.disabled = false;
+        audioFormat.style.filter = 'none';
     }
 }
 );
@@ -151,6 +162,7 @@ function theme_updated() {
     // called when theme is updated
     const theme = document.getElementById('theme-select').value;
     localStorage.setItem('theme', theme);
+    document.body.classList.add('loaded');
 }
 
 // Add event listeners
@@ -159,10 +171,22 @@ document.getElementById('theme-select').addEventListener('change', theme_updated
 // wait for the DOM to load before running the function
 document.addEventListener('DOMContentLoaded', function() {
     get_theme_cookie();
+    document.body.classList.add('loaded');
     const videoQuality = document.getElementById('video-quality');
+    const videoFormat = document.getElementById('video-format');
     const audioFormat = document.getElementById('audio-format');
+
     audioFormat.disabled = true;
+    audioFormat.style.filter = 'grayscale(1)';
+    videoFormat.disabled = false;
+    videoFormat.style.filter = 'none';
     videoQuality.disabled = false;
-
-
+    videoQuality.style.filter = 'none';
 });
+
+// window.addEventListener('pageshow', function(event) {
+//     if (event.persisted) {
+//         window.location.reload();
+//     }
+// }
+// );
