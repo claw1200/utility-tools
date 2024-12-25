@@ -25,7 +25,6 @@ body {
     background-color: black;
     color: var(--text-light);
     transition: background-color 0.3s, color 0.3s;
-    zoom: 1.4;
 }
 
 body.loaded {
@@ -37,15 +36,28 @@ h1 {
     margin-top: 2rem;
 }
 
+@media (max-width: 450px) {
+  .h1 {
+    text-align: center;
+    margin-top: 2rem;
+  }
+}
+
 .container {
     display: flex;
     justify-content: center;
     align-items: center;
 }
 
+@media (max-width: 600px) {
+    .container {
+        display: block;
+    }
+}
+
 .widget {
     display: flex;
-    flex-direction: column;
+    flex-direction: column; 
     width: 200px;
     height: 250px;
     margin: 2rem;
@@ -75,6 +87,15 @@ h1 {
 .widget:hover {
     box-shadow: 0 0 20px rgba(0,0,0,0.2);
     transform: scale(1.05);
+}
+
+@media (max-width: 600px) {
+    .widget {
+        width: 70%;
+        height: auto;
+        margin: 2rem auto;
+
+    }
 }
 
 .input-group {
@@ -155,22 +176,6 @@ button:hover {
     cursor: pointer;
 }
 
-@media (max-width: 500px) {
-    .widgetulator {
-        position: relative;  /* Add this to make it a positioning context */
-    }
-    
-    .menu-icon {
-        position: absolute;  /* Change from fixed to absolute */
-        right: 20px;
-        top: 40px;
-        max-width: 40px;
-        z-index: 1000;
-        cursor: pointer;
-        transition: transform 0.2s ease;
-    }
-}
-
 .menu-icon img,
 .menu-icon svg {
     width: 100%;
@@ -187,6 +192,13 @@ button:hover {
 
 .menu-icon.active:hover {
     transform: rotate(90deg) scale(1.1);    
+}
+
+@media (max-width: 450px) {
+    .menu-icon {
+        right: 6px;
+        top: 6px;
+    }
 }
 
 .settings-panel {
