@@ -17,7 +17,6 @@ body {
     background-color: black;
     color: var(--text-light);
     transition: background-color 0.3s, color 0.3s;
-    zoom: 1.4;
 }
 
 body.loaded {
@@ -33,6 +32,13 @@ body.loaded {
     background-color: var(--widget-bg-light);
     transition: background-color 0.3s;
 }
+
+.error-message {
+  display: none;
+  align-self: center;
+  text-align: center;
+}
+
 
 
 .input-group {
@@ -61,6 +67,18 @@ body.loaded {
   color: var(--text-light);
   outline-style: none;
   transition: border-color 0.3s, background-color 0.3s, color 0.3s, filter 0.3s;
+}
+
+@media (max-width: 500px) {
+    .extra-inputs-container {
+        padding: 0.5rem;
+        flex-direction: column;
+    }
+
+    .extra-inputs-container label {
+        width: 100%;
+        padding-top: 12px;
+    }
 }
 
 
@@ -113,7 +131,7 @@ button:hover {
 }
 
 @media (max-width: 500px) {
-    .widgetulator {
+    .widget {
         position: relative;  /* Add this to make it a positioning context */
     }
     

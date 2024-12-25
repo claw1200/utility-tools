@@ -4,11 +4,16 @@ function download() {
     const video_quality = document.getElementById('video-quality').value;
     const video_format = document.getElementById('video-format').value;
     const audio_format = document.getElementById('audio-format').value;
-
     const download_button = document.getElementById('download-button');
+    const error_message = document.getElementById('error-message');
+
+    // hide error message
+    error_message.style.display = 'none';
 
     download_button.disabled = true;
-    download_button.innerText = 'Downloading...';
+    download_button.innerText = 'download starting';
+    download_button.style.cursor = 'not-allowed';
+    download_button.style.pointerEvents = 'none';
 
     fetch('/download_node', {
         method: 'POST',
@@ -68,9 +73,10 @@ function download() {
 
                             // Disable the download button
                             download_button.disabled = true;
-                            // Change the download button text
-                            download_button.innerText = 'Downloading...';
-
+                            download_button.style.cursor = 'not-allowed';
+                            download_button.innerText = `${progress_percentage}%`;
+                            // disable the download button hover effect 
+                            download_button.style.pointerEvents = 'none';
                         }
 
                         controller.enqueue(value);
@@ -102,10 +108,32 @@ function download() {
         // Enable the download button
         download_button.disabled = false;
         // Change the download button text
-        download_button.innerText = 'Download';
+        download_button.innerText = 'download';
     })
     .catch(error => {
-        console.error('Error:', error);
+        // Enable the download button
+        download_button.disabled = false;
+        // Change the download button text
+        download_button.innerText = 'download';
+
+        // show error message
+        const error_message = document.getElementById('error-message');
+        error_message.innerText = 'failed to find a file matching the given criteria 🤔';
+        error_message.style.display = 'block';
+
+        // flash widget red for 1 second
+        const widget = document.getElementsByClassName('widget')[0];
+        widget.style.transition = 'background-color 0s';
+        widget.style.backgroundColor = '#770000';
+        setTimeout(() => {
+            widget.style.transition = 'background-color 0.7s';
+            widget.style.backgroundColor = '';
+            
+        }, 20);
+        setTimeout(() => {
+            widget.style.transition = '';
+        }, 720);
+
     });
 }
 

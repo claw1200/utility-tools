@@ -54,7 +54,7 @@
             <div class="extra-inputs-container">
 
                 <div class="extra-input">
-                    <label>download Mode</label>
+                    <label>download mode</label>
                     <select id="download-mode">
                         <option value="auto">video</option>
                         <option value="audio">audio</option>
@@ -104,10 +104,14 @@
         </div>
         <button id="download-button" onclick="download()">download</button>
 
-        <div class="progress-bar id progress-bar">
+        <div class="progress-bar" id="progress-bar">
             <div class="progress" id="progress" style="display: none;"></div>
         </div>
 
+        <div class="error-message" id="error-message">
+            <p></p>
+        </div>
+        
     </div>
 
     <div class="wave-container">
