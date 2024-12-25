@@ -17,7 +17,6 @@ body {
     background-color: black;
     color: var(--text-light);
     transition: background-color 0.3s, color 0.3s;
-    zoom: 1.4;
 }
 
 body.loaded {
