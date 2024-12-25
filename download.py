@@ -33,20 +33,21 @@ async def download_media_ytdlp(url, download_mode, video_quality, video_format, 
         ytdl_options["format"] = f"""
         bestaudio[ext={audio_format}]/
         bestaudio[acodec=aac]/
-        bestaudio/
-        best
+        bestaudio
         """
 
     if download_mode == "auto":
         ytdl_options["format"] = f"""
-        bestvideo[vcodec=h264][height<={video_quality}]+bestaudio[acodec={video_format}]/
-        bestvideo[vcodec=h264][height<={video_quality}]+bestaudio/
-        bestvideo[vcodec=vp9][ext=webm][height<={video_quality}]+bestaudio[ext=webm]/
-        bestvideo[vcodec=vp9][ext=webm][height<={video_quality}]+bestaudio/
-        bestvideo[height<={video_quality}]+bestaudio/
-        bestvideo+bestaudio/
-        best
+        bestvideo[vcodec=h264][height<={video_quality}][ext={video_format}]+bestaudio/
+        bestvideo[height<={video_quality}][ext={video_format}]+bestaudio/
         """
+
+        # bestvideo[vcodec=h264][height<={video_quality}]+bestaudio/
+        # bestvideo[vcodec=vp9][ext=webm][height<={video_quality}]+bestaudio[ext=webm]/
+        # bestvideo[vcodec=vp9][ext=webm][height<={video_quality}]+bestaudio/
+        # bestvideo[height<={video_quality}]+bestaudio/
+        # bestvideo+bestaudio/
+        # best
 
     ytdl = yt_dlp.YoutubeDL(ytdl_options)
 
