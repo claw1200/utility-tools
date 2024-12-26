@@ -7,7 +7,16 @@ import logging
 
 app = Flask(__name__)
 
-async def download_media_ytdlp(url, download_mode, video_quality, video_format, audio_format):
+# make flask quiet
+import logging
+log = logging.getLogger('werkzeug')
+log.setLevel(logging.ERROR)
+
+async def download_media_ytdlp(url, download_mode, video_quality, video_format, audio_format, strict_formats):
+    if strict_formats == "true":
+        strict_formats = True
+    else:
+        strict_formats = False
     # Configure yt-dlp options
     ytdl_options = {
         "format": "best",
@@ -15,11 +24,21 @@ async def download_media_ytdlp(url, download_mode, video_quality, video_format, 
         "quiet": True,
         "no_warnings": True,
         "noplaylist": True,
+        "lazy_playlist": False,
+        "playlist_items" : "1",
         "noprogress": True,
         "nocheckcertificate": True,
         "cookiefile": ".cookies",
         "color": "never",
+        "postprocessors": [{
+            "key": "FFmpegMetadata"
+        }],
     }
+
+    filesize_limit = "100M" # as this applies to both audio and video, max file size is theoretically 200M
+
+    non_strict_video = f"bestvideo[filesize<={filesize_limit}][height<={video_quality}]+bestaudio/bestvideo[filesize<={filesize_limit}]+bestaudio/best[filesize<={filesize_limit}]"
+    non_strict_audio = f"bestaudio/best[filesize<={filesize_limit}]"
 
     # default options
     if video_quality == "auto":
@@ -30,24 +49,22 @@ async def download_media_ytdlp(url, download_mode, video_quality, video_format, 
         video_format = "mp4"
 
     if download_mode == "audio":
-        ytdl_options["format"] = f"""
+        download_setting_string = f"""
         bestaudio[ext={audio_format}]/
-        bestaudio[acodec=aac]/
-        bestaudio
         """
+        if strict_formats == False:
+            #append non-strict formats
+            download_setting_string += non_strict_audio
 
     if download_mode == "auto":
-        ytdl_options["format"] = f"""
-        bestvideo[vcodec=h264][height<={video_quality}][ext={video_format}]+bestaudio/
-        bestvideo[height<={video_quality}][ext={video_format}]+bestaudio/
+        download_setting_string = f"""
+        bestvideo[filesize<={filesize_limit}][height<={video_quality}][ext={video_format}]+bestaudio/
         """
+        if strict_formats == False:
+            #append non-strict formats
+            download_setting_string += non_strict_video
 
-        # bestvideo[vcodec=h264][height<={video_quality}]+bestaudio/
-        # bestvideo[vcodec=vp9][ext=webm][height<={video_quality}]+bestaudio[ext=webm]/
-        # bestvideo[vcodec=vp9][ext=webm][height<={video_quality}]+bestaudio/
-        # bestvideo[height<={video_quality}]+bestaudio/
-        # bestvideo+bestaudio/
-        # best
+    ytdl_options["format"] = download_setting_string
 
     ytdl = yt_dlp.YoutubeDL(ytdl_options)
 
@@ -60,11 +77,24 @@ async def download_media_ytdlp(url, download_mode, video_quality, video_format, 
         )
 
     except yt_dlp.DownloadError as e:
-        raise Exception(f"Error: {e}")
+        return jsonify({
+            "error": str(e)
+        })
 
+    if "entries" in info:
+        filepath = ytdl.prepare_filename(info["entries"][0])
+    else:
+        filepath = ytdl.prepare_filename(info)
+    filename = os.path.basename(filepath)
 
-    filepath = ytdl.prepare_filename(info)
-    return filepath
+    output = jsonify({
+        "filepath": filepath,
+        "filename": filename,
+        "error": "none"
+    })
+
+    return output
+
 
 @app.route('/download_python')
 def download_python():
@@ -74,17 +104,13 @@ def download_python():
     video_quality = request.args.get('video_quality')
     video_format = request.args.get('video_format')
     audio_format = request.args.get('audio_format')
+    strict_formats = request.args.get('strict_formats')
 
-    filepath = asyncio.run(download_media_ytdlp(url, download_mode, video_quality, video_format, audio_format))
-    
-    output = jsonify({
-        "filepath": filepath,
-        "filename": os.path.basename(filepath),
-        
-    })
+    print (f"Request as follows:\nURL: {url}\nDownload Mode: {download_mode}\nVideo Quality: {video_quality}\nVideo Format: {video_format}\nAudio Format: {audio_format}\nStrict Formats: {strict_formats}")
 
-    logging.info(f"Downloaded {url} to {filepath}")
-    return output
+    response = asyncio.run(download_media_ytdlp(url, download_mode, video_quality, video_format, audio_format, strict_formats))
+
+    return response
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=9000)

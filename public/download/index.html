@@ -17,7 +17,6 @@
     <meta name="twitter:card" content="summary">
     <meta name="twitter:title" content="Simple Downloader">
     <meta name="twitter:description" content="A simple multi-platform downloader videos and audio.">
-    
 </head>
 <body>
     
@@ -26,15 +25,23 @@
     </div>
     
     <div class="settings-panel">
-        <h2>settings</h2>
+        <h2>settings ⚙️</h2>
         <div class="setting-item">
-            <label>theme:</label>
+            <label>theme</label>
             <select id="theme-select">
                 <option value="light">light</option>
                 <option value="dark">dark</option>
                 <option value="green">green</option>
                 <option value="orange">orange</option>
                 <option value="purple">purple</option>
+            </select>
+        </div>
+
+        <div class="setting-item">
+            <label>strict formats</label>
+            <select id="strict-formats">
+                <option value="true">😤 exact match</option>
+                <option value="false">😄 i'll try my best</option>
             </select>
         </div>
 
@@ -49,15 +56,15 @@
         <h1>simple downloader (beta)</h1>    
         <div class="input-group">
             <label for="url-input-box">url:</label>
-            <input type="string" id="url-input-box" placeholder="enter url">
+            <input type="string" id="url-input-box" placeholder="e.g: https://www.youtube.com/watch?v=dQw4w9WgXcQ">
 
             <div class="extra-inputs-container">
 
                 <div class="extra-input">
                     <label>download mode</label>
                     <select id="download-mode">
-                        <option value="auto">video</option>
-                        <option value="audio">audio</option>
+                        <option value="auto">🎥 video</option>
+                        <option value="audio">🎵 audio</option>
                     </select>
                 </div>
 
@@ -123,6 +130,7 @@
 
     <div class="footer">
         <p>created by <a href="https://github.com/claw1200">claw</a></p>
+        <p>other <a href="/">tools</a></p>
     </div>
 
 </body>

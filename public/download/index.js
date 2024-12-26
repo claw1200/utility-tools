@@ -1,9 +1,12 @@
+
+
 function download() {
     const url = document.getElementById('url-input-box').value;
     const download_mode = document.getElementById('download-mode').value;
     const video_quality = document.getElementById('video-quality').value;
     const video_format = document.getElementById('video-format').value;
     const audio_format = document.getElementById('audio-format').value;
+    const strict_formats = document.getElementById('strict-formats').value;
     const download_button = document.getElementById('download-button');
     const error_message = document.getElementById('error-message');
 
@@ -26,16 +29,31 @@ function download() {
             video_quality: video_quality,
             video_format: video_format,
             audio_format: audio_format,
+            strict_formats: strict_formats,
         }),
     })
     .then(async (response) => {
-        if (!response.ok) {
-            throw new Error('Failed to download file');
+        if (response.status == 429) {
+            error_display('slow it down buddy, and try again in a moment 🥶');
+            return;
+        }
+
+        if (response.status == 400) {
+            error_display('failed to find a file matching the given criteria 🤔\ntry changing your settings or disable strict formats');
+            return;
+        }
+
+        else if (response.status != 200) {
+            throw new Error('Failed to fetch');
         }
 
         // Get filename from the Content-Disposition header
         const contentDisposition = response.headers.get('Content-Disposition');
-        const filename = contentDisposition ? contentDisposition.split('=')[1] : 'downloaded_file';
+        let filename = contentDisposition ? contentDisposition.split('=')[1] : 'downloaded_file';
+        // decode filename to support special characters
+        filename = decodeURIComponent(filename);
+
+        console.log(`Downloading file: ${filename}`);
 
         // Get total file size from the Content-Length header
         const contentLength = response.headers.get('Content-Length');
@@ -66,7 +84,7 @@ function download() {
                         downloaded += value.length;
                         if (total_size) {
                             const progress_percentage = ((downloaded / total_size) * 100).toFixed(2);
-                            console.log(`Progress: ${progress_percentage}%`);
+                            //console.log(`Progress: ${progress_percentage}%`);
                             // Update progress bar
                             progress.style.display = 'block';
                             progress.style.width = `${progress_percentage}%`;
@@ -107,34 +125,44 @@ function download() {
 
         // Enable the download button
         download_button.disabled = false;
+        download_button.style.cursor = 'pointer';
+        download_button.style.pointerEvents = 'auto';
         // Change the download button text
         download_button.innerText = 'download';
     })
     .catch(error => {
-        // Enable the download button
-        download_button.disabled = false;
-        // Change the download button text
-        download_button.innerText = 'download';
-
-        // show error message
-        const error_message = document.getElementById('error-message');
-        error_message.innerText = 'failed to find a file matching the given criteria 🤔';
-        error_message.style.display = 'block';
-
-        // flash widget red for 1 second
-        const widget = document.getElementsByClassName('widget')[0];
-        widget.style.transition = 'background-color 0s';
-        widget.style.backgroundColor = '#770000';
-        setTimeout(() => {
-            widget.style.transition = 'background-color 0.7s';
-            widget.style.backgroundColor = '';
-            
-        }, 20);
-        setTimeout(() => {
-            widget.style.transition = '';
-        }, 720);
-
+        error_display("something went wrong (but idk what it is) 😱");
+        console.error(error)
     });
+}
+
+function error_display(error_message_text) {
+    const download_button = document.getElementById('download-button');
+
+    // Enable the download button
+    download_button.disabled = false;
+    download_button.style.cursor = 'pointer';
+    download_button.style.pointerEvents = 'auto';
+    // Change the download button text
+    download_button.innerText = 'download';
+
+    // show error message
+    const error_message = document.getElementById('error-message');
+    error_message.innerText = error_message_text;
+    error_message.style.display = 'block';
+
+    // flash widget red for 1 second
+    const widget = document.getElementsByClassName('widget')[0];
+    widget.style.transition = 'background-color 0s';
+    widget.style.backgroundColor = '#770000';
+    setTimeout(() => {
+        widget.style.transition = 'background-color 0.7s';
+        widget.style.backgroundColor = '';
+        
+    }, 20);
+    setTimeout(() => {
+        widget.style.transition = '';
+    }, 720);
 }
 
 
@@ -209,6 +237,7 @@ document.addEventListener('DOMContentLoaded', function() {
     videoFormat.disabled = false;
     videoFormat.style.filter = 'none';
     videoQuality.disabled = false;
+    videoQuality.value = '720';
     videoQuality.style.filter = 'none';
 });
 
