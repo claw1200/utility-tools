@@ -74,7 +74,7 @@ async def download_media_ytdlp(url, download_mode, video_quality, video_format, 
                 if total > 0:
                     progress = (downloaded / total) * 100
                     download_progress[download_id] = progress
-                    logging.info(f"Download progress: {progress:.1f}%")
+                    #logging.info(f"Download progress: {progress:.1f}%")
             except Exception as e:
                 logging.error(f"Error in progress hook: {e}")
 
@@ -354,13 +354,16 @@ def check_malicious_requests():
 def serve_index():
     return send_from_directory(app.static_folder, 'index.html')
 
-@app.route('/download')
+@app.route('/download/')
 def serve_download():
     return send_from_directory(f"{app.static_folder}/download", 'index.html')
 
-@app.route('/tempo-pitch-calc')
+@app.route('/tempo-pitch-calc/')
 def serve_tempo_pitch_calc():
     return send_from_directory(f"{app.static_folder}/tempo-pitch-calc", 'index.html')
+
+
+
 
 if __name__ == '__main__':
     load_banned_ips()
