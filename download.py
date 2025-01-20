@@ -167,22 +167,31 @@ def download_node():
 
         # Stream the file
         def generate():
-            with open(file_location, 'rb') as f:
-                while True:
-                    chunk = f.read(8192)  # 8KB chunks
-                    if not chunk:
-                        break
-                    yield chunk
-            # Delete file after streaming is complete
-            os.remove(file_location)
-            print(f"File deleted: {file_location}")
+            total_size = os.path.getsize(file_location)
+            buffer_size = 65536  # 64KB buffer for better streaming performance
+            
+            try:
+                with open(file_location, 'rb') as f:
+                    while True:
+                        # Read into buffer
+                        buffer = f.read(buffer_size)
+                        if not buffer:
+                            break
+                        yield buffer
+            finally:
+                # Delete file after streaming is complete
+                os.remove(file_location)
+                print(f"File deleted: {file_location}")
 
         response = app.response_class(
             generate(),
-            mimetype='application/octet-stream'
+            mimetype='application/octet-stream',
+            direct_passthrough=True
         )
-        response.headers['Content-Disposition'] = f'attachment; filename={filename}'
-        response.headers['Content-Length'] = os.path.getsize(file_location)
+        response.headers.set('Content-Disposition', f'attachment; filename={filename}')
+        response.headers.set('Content-Length', str(os.path.getsize(file_location)))
+        response.headers.set('Cache-Control', 'no-cache')
+        response.headers.set('X-Accel-Buffering', 'no')  # Disable nginx buffering if present
         
         return response
 

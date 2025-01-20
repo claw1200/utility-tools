@@ -83,7 +83,7 @@ function download() {
 
                         downloaded += value.length;
                         if (total_size) {
-                            const progress_percentage = ((downloaded / total_size) * 100).toFixed(2);
+                            const progress_percentage = ((downloaded / total_size) * 100).toFixed(0);
                             //console.log(`Progress: ${progress_percentage}%`);
                             // Update progress bar
                             progress.style.display = 'block';
