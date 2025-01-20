@@ -134,6 +134,7 @@ function toggleMenu() {
     settingsPanel.classList.toggle('open');
 }
 
+
 // Add event listener for theme change
 document.getElementById('theme-select').addEventListener('change', function(e) {
     document.body.className = e.target.value + '-theme';

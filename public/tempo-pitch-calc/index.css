@@ -158,6 +158,47 @@ button:hover {
     max-width: 89%;
 }
 
+.bot-panel {
+  position: fixed;
+  left: -240px;
+  top: 20px;
+  width: 220px; 
+  height: 20px; 
+  background-color: var(--widget-bg-light);
+  padding: 20px;
+  box-shadow: -2px 0 5px rgba(0, 0, 0, 0.1);
+  transition: 0.3s;
+  z-index: 2;
+  border-top-right-radius: 20px;
+  border-bottom-right-radius: 20px;
+}
+
+.bot-panel:hover {
+  left: 0;
+}
+
+.bot-panel-content {
+  display: flex;
+  align-items: center; 
+  gap: 0 10px;
+}
+
+.bot-panel-content img {
+  flex-shrink: 0; 
+  width: 20px; 
+  height: 100%;
+}
+
+.bot-panel-content span {
+  flex-grow: 1;
+  text-align: left;
+  white-space: nowrap; 
+  overflow: hidden; 
+  text-overflow: ellipsis;
+}
+
+
+
 .footer {
     text-align: center;
     margin-top: 2rem;
