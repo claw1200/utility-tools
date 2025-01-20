@@ -5,3 +5,4 @@ server.js
 .cookies
 /temp
 test.py
+bans.log
