@@ -1,4 +1,4 @@
-from flask import Flask, jsonify, request, send_file, send_from_directory
+from flask import Flask, jsonify, request, send_file, send_from_directory, Response
 import asyncio
 import yt_dlp
 from functools import partial
@@ -7,6 +7,9 @@ import logging
 from datetime import datetime, timedelta
 from collections import defaultdict
 import logging
+import io
+import json
+import time
 
 app = Flask(__name__, static_folder='public', static_url_path='')
 # turn on debug
@@ -29,10 +32,13 @@ MALICIOUS_PATTERNS = [
 ]
 
 logging.basicConfig(
-    filename='bans.log',
+    filename='server.log',
     level=logging.INFO,
     format='%(asctime)s - %(message)s'
 )
+
+# Add a global dictionary to store download progress
+download_progress = {}
 
 def is_rate_limited(ip):
     # Don't even check rate limits for banned IPs
@@ -55,6 +61,23 @@ async def download_media_ytdlp(url, download_mode, video_quality, video_format, 
         strict_formats = True
     else:
         strict_formats = False
+
+    # Generate a unique download ID
+    download_id = str(datetime.now().timestamp())
+    download_progress[download_id] = 0
+
+    def progress_hook(d):
+        if d['status'] == 'downloading':
+            try:
+                total = d.get('total_bytes') or d.get('total_bytes_estimate', 0)
+                downloaded = d.get('downloaded_bytes', 0)
+                if total > 0:
+                    progress = (downloaded / total) * 100
+                    download_progress[download_id] = progress
+                    logging.info(f"Download progress: {progress:.1f}%")
+            except Exception as e:
+                logging.error(f"Error in progress hook: {e}")
+
     # Configure yt-dlp options
     ytdl_options = {
         "format": "best",
@@ -63,11 +86,12 @@ async def download_media_ytdlp(url, download_mode, video_quality, video_format, 
         "no_warnings": True,
         "noplaylist": True,
         "lazy_playlist": False,
-        "playlist_items" : "1",
+        "playlist_items": "1",
         "noprogress": True,
         "nocheckcertificate": True,
         "cookiefile": ".cookies",
         "color": "never",
+        "progress_hooks": [progress_hook],
         "postprocessors": [{
             "key": "FFmpegMetadata"
         }],
@@ -117,7 +141,7 @@ async def download_media_ytdlp(url, download_mode, video_quality, video_format, 
     except yt_dlp.DownloadError as e:
         return jsonify({
             "error": str(e)
-        })
+        }), download_id
 
     if "entries" in info:
         filepath = ytdl.prepare_filename(info["entries"][0])
@@ -129,9 +153,30 @@ async def download_media_ytdlp(url, download_mode, video_quality, video_format, 
         "filepath": filepath,
         "filename": filename,
         "error": "none"
-    })
+    }), download_id
 
     return output
+
+@app.route('/download_progress/<download_id>')
+def stream_progress(download_id):
+    def generate():
+        while True:
+            # Get current progress
+            progress = download_progress.get(download_id, 0)
+            
+            # Send progress to client
+            data = json.dumps({"progress": progress})
+            yield f"data: {data}\n\n"
+            
+            # Clean up if download is complete
+            if progress >= 100:
+                if download_id in download_progress:
+                    del download_progress[download_id]
+                break
+                
+            time.sleep(0.5)  # Wait half a second between updates
+
+    return Response(generate(), mimetype='text/event-stream')
 
 @app.route('/download_node', methods=['POST'])
 def download_node():
@@ -153,14 +198,17 @@ def download_node():
     audio_format = request.json.get('audio_format')
     strict_formats = request.json.get('strict_formats')
 
-    print(f"Request as follows:\nURL: {url}\nDownload Mode: {download_mode}\nVideo Quality: {video_quality}\nVideo Format: {video_format}\nAudio Format: {audio_format}\nStrict Formats: {strict_formats}")
+    logging.info(f"Request as follows:\nURL: {url}\nDownload Mode: {download_mode}\nVideo Quality: {video_quality}\nVideo Format: {video_format}\nAudio Format: {audio_format}\nStrict Formats: {strict_formats}")
 
     try:
         # Get the download information
-        response = asyncio.run(download_media_ytdlp(url, download_mode, video_quality, video_format, audio_format, strict_formats))
+        response, download_id = asyncio.run(download_media_ytdlp(url, download_mode, video_quality, video_format, audio_format, strict_formats))
         
         if response.json['error'] != "none":
             return jsonify({"error": response.json['error']}), 400
+
+        # Add download_id to response
+        response.json['download_id'] = download_id
 
         file_location = response.json['filepath']
         filename = response.json['filename']
@@ -181,7 +229,7 @@ def download_node():
             finally:
                 # Delete file after streaming is complete
                 os.remove(file_location)
-                print(f"File deleted: {file_location}")
+                logging.info(f"File deleted: {file_location}")
 
         response = app.response_class(
             generate(),
@@ -200,15 +248,106 @@ def download_node():
         return jsonify({"error": "An error occurred during the download process"}), 500
 
 def save_banned_ips():
-    with open('banned_ips.txt', 'w') as f:
+    with open('banned.txt', 'w') as f:
         f.write('\n'.join(BANNED_IPS))
 
 def load_banned_ips():
     try:
-        with open('banned_ips.txt', 'r') as f:
+        with open('banned.txt', 'r') as f:
             BANNED_IPS.update(f.read().splitlines())
     except FileNotFoundError:
         pass
+
+def check_raw_request(raw_data, client_ip):
+    """Check raw request data for malicious patterns"""
+    for pattern in MALICIOUS_PATTERNS:
+        if pattern in raw_data:
+            logging.warning(f"Blocked malicious request from {client_ip} matching pattern: {pattern}")
+            BANNED_IPS.add(client_ip)
+            save_banned_ips()
+            return True
+    return False
+
+class MaliciousRequestMiddleware:
+    def __init__(self, app):
+        self.app = app
+
+    def __call__(self, environ, start_response):
+        # Get client IP
+        client_ip = environ.get('REMOTE_ADDR')
+        
+        # Check if IP is already banned
+        if client_ip in BANNED_IPS:
+            logging.warning(f"Rejected request from banned IP: {client_ip}")
+            response = jsonify({"error": "Access denied"})
+            return response(environ, start_response)
+
+        # Get raw request data
+        try:
+            raw_data = environ.get('wsgi.input').read()
+            if check_raw_request(raw_data, client_ip):
+                response = jsonify({"error": "Access denied"})
+                return response(environ, start_response)
+            # Reset input stream
+            environ['wsgi.input'] = io.BytesIO(raw_data)
+        except Exception as e:
+            logging.error(f"Error processing request from {client_ip}: {e}")
+            BANNED_IPS.add(client_ip)
+            save_banned_ips()
+            response = jsonify({"error": "Access denied"})
+            return response(environ, start_response)
+
+        return self.app(environ, start_response)
+
+# Apply the middleware
+app.wsgi_app = MaliciousRequestMiddleware(app.wsgi_app)
+
+# Add this after the app initialization but before the routes
+@app.before_request
+def check_malicious_requests():
+    # load banned ips
+    load_banned_ips()
+    logging.info(f"Banned IPs: {BANNED_IPS}")
+
+    # if ip is banned, return 403
+    if request.remote_addr in BANNED_IPS:
+        return jsonify({"error": "Access denied"}), 403
+
+    # Get the raw request data
+    raw_data = request.get_data()
+    
+    # Check request against malicious patterns
+    for pattern in MALICIOUS_PATTERNS:
+        if pattern in raw_data:
+            # Log the blocked request
+            logging.warning(f"Blocked malicious request from {request.remote_addr} matching pattern: {pattern}")
+            # Add the IP to banned list
+            BANNED_IPS.add(request.remote_addr)
+            # Save the updated banned IPs list
+            save_banned_ips()
+            return jsonify({"error": "Access denied"}), 403
+    
+    # Check if the request headers contain suspicious patterns
+    headers_str = str(request.headers).lower()
+    suspicious_headers = [
+        'sqlmap',
+        'acunetix',
+        'nikto',
+        'nmap',
+        'masscan',
+        'zmeu',
+        'dirbuster',
+        'gobuster',
+        'burp'
+    ]
+    
+    for header in suspicious_headers:
+        if header in headers_str:
+            logging.warning(f"Blocked suspicious request from {request.remote_addr} with header: {header}")
+            BANNED_IPS.add(request.remote_addr)
+            save_banned_ips()
+            return jsonify({"error": "Access denied"}), 403
+
 
 # Serve the main index.html
 @app.route('/')
@@ -222,11 +361,6 @@ def serve_download():
 @app.route('/tempo-pitch-calc')
 def serve_tempo_pitch_calc():
     return send_from_directory(f"{app.static_folder}/tempo-pitch-calc", 'index.html')
-
-# Add new route for download-specific static files
-@app.route('/download/<path:filename>')
-def download_static(filename):
-    return send_from_directory(f"{app.static_folder}/download", filename)
 
 if __name__ == '__main__':
     load_banned_ips()
