@@ -6,3 +6,4 @@ server.js
 /temp
 test.py
 bans.log
+/__pycache__/
