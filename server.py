@@ -10,6 +10,7 @@ import logging
 import io
 import json
 import time
+from urllib.parse import quote
 
 app = Flask(__name__, static_folder='public', static_url_path='')
 # turn on debug
@@ -215,7 +216,6 @@ def download_node():
 
         # Stream the file
         def generate():
-            total_size = os.path.getsize(file_location)
             buffer_size = 65536  # 64KB buffer for better streaming performance
             
             try:
@@ -236,6 +236,9 @@ def download_node():
             mimetype='application/octet-stream',
             direct_passthrough=True
         )
+        # url encode filename
+        filename = quote(filename)
+        print(filename)
         response.headers.set('Content-Disposition', f'attachment; filename={filename}')
         response.headers.set('Content-Length', str(os.path.getsize(file_location)))
         response.headers.set('Cache-Control', 'no-cache')
@@ -361,9 +364,6 @@ def serve_download():
 @app.route('/tempo-pitch-calc/')
 def serve_tempo_pitch_calc():
     return send_from_directory(f"{app.static_folder}/tempo-pitch-calc", 'index.html')
-
-
-
 
 if __name__ == '__main__':
     load_banned_ips()
