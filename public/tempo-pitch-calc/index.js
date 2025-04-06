@@ -111,13 +111,13 @@ function handleInputChangeNotation(event) {
     const pitchType = event.target.value;
     const pitchLabel = document.getElementById('pitch-label');
     if (pitchType === "semitones") {
-        pitchLabel.innerHTML = "Semitones";
+        pitchLabel.innerHTML = "semitones";
     }
     else if (pitchType === "cents") {
-        pitchLabel.innerHTML = "Cents";
+        pitchLabel.innerHTML = "cents";
     }
     else if (pitchType === "ratio") {
-        pitchLabel.innerHTML = "Ratio";
+        pitchLabel.innerHTML = "ratio";
     }
     // set the item last in the queue to empty
     if (lastEdited.length > 2) {
