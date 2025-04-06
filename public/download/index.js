@@ -338,7 +338,7 @@ function updateFormats(url) {
     })
     .catch(error => {
         console.error('Error fetching formats:', error);
-        // Don't show error to user as this is a background operation
+        error_display('failed to fetch formats for this link. try a different one?');
     })
     .finally(() => {
         // Reset download button state
