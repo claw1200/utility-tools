@@ -356,13 +356,31 @@ function updateFormats(url) {
             // Switch to audio mode if no video formats available but audio exists
             downloadMode.value = 'audio';
             updateFormatSelectorsVisibility('audio');
+            
+            // Hide video option from download mode list
+            const videoOption = downloadMode.querySelector('option[value="auto"]');
+            if (videoOption) {
+                videoOption.style.display = 'none';
+            }
         } else if (data.audio_combinations.length === 0 && data.video_combinations.length > 0) {
             // Switch to video mode if no audio formats available but video exists
             downloadMode.value = 'auto';
             updateFormatSelectorsVisibility('auto');
+            
+            // Show video option if it was hidden
+            const videoOption = downloadMode.querySelector('option[value="auto"]');
+            if (videoOption) {
+                videoOption.style.display = '';
+            }
         } else if (data.video_combinations.length === 0 && data.audio_combinations.length === 0) {
             // No formats available at all
             throw new Error('No formats available for this URL');
+        } else {
+            // Both formats available, ensure video option is visible
+            const videoOption = downloadMode.querySelector('option[value="auto"]');
+            if (videoOption) {
+                videoOption.style.display = '';
+            }
         }
 
         // Update video quality options if we have video formats

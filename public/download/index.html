@@ -51,7 +51,6 @@
             <input type="string" id="url-input-box" placeholder="e.g: https://www.youtube.com/watch?v=dQw4w9WgXcQ">
 
             <div class="extra-inputs-container">
-
                 <div class="extra-input">
                     <label>download mode</label>
                     <select id="download-mode">
@@ -60,63 +59,67 @@
                     </select>
                 </div>
 
-                <div class="extra-input">
-                    <label>video quality</label>
-                    <select id="video-quality">
-                        <option value="144">144p</option>
-                        <option value="240">240p</option>
-                        <option value="360">360p</option>
-                        <option value="480">480p</option>
-                        <option value="720">720p</option>
-                        <option value="1080">1080p</option>
-                    </select>
+                <div class="settings-group" id="video-settings">
+                    <div class="extra-input">
+                        <label>video quality</label>
+                        <select id="video-quality">
+                            <option value="144">144p</option>
+                            <option value="240">240p</option>
+                            <option value="360">360p</option>
+                            <option value="480">480p</option>
+                            <option value="720">720p</option>
+                            <option value="1080">1080p</option>
+                        </select>
+                    </div>
+
+                    <div class="extra-input">
+                        <label>video format</label>
+                        <select id="video-format">
+                            <option value="mp4">mp4</option>
+                            <option value="webm">webm</option>
+                            <option value="mkv">mkv</option>
+                            <option value="avi">avi</option>
+                            <option value="flv">flv</option>
+                            <option value="mov">mov</option>
+                            <option value="wmv">wmv</option>
+                            <option value="3gp">3gp</option>
+                        </select>
+                    </div>
+
+                    <div class="extra-input">
+                        <label>video codec</label>
+                        <select id="video-codec">
+                            <option value="h264">h264</option>
+                            <option value="vp9">vp9</option>
+                            <option value="av1">av1</option>
+                        </select>
+                    </div>
                 </div>
 
-                <div class="extra-input">
-                    <label>video format</label>
-                    <select id="video-format">
-                        <option value="mp4">mp4</option>
-                        <option value="webm">webm</option>
-                        <option value="mkv">mkv</option>
-                        <option value="avi">avi</option>
-                        <option value="flv">flv</option>
-                        <option value="mov">mov</option>
-                        <option value="wmv">wmv</option>
-                        <option value="3gp">3gp</option>
-                    </select>
-                </div>
+                <div class="settings-group" id="audio-settings">
+                    <div class="extra-input">
+                        <label>audio format</label>
+                        <select id="audio-format">
+                            <option value="webm">webm</option>
+                            <option value="opus">opus</option>
+                            <option value="mp3">mp3</option>
+                            <option value="m4a">m4a</option>
+                            <option value="wav">wav</option>
+                            <option value="aac">aac</option>
+                            <option value="ogg">ogg</option>
+                            <option value="flac">flac</option>
+                        </select>
+                    </div>
 
-                <div class="extra-input">
-                    <label>video codec</label>
-                    <select id="video-codec">
-                        <option value="h264">h264</option>
-                        <option value="vp9">vp9</option>
-                        <option value="av1">av1</option>
-                    </select>
-                </div>
-
-                <div class="extra-input">
-                    <label>audio format</label>
-                    <select id="audio-format">
-                        <option value="webm">webm</option>
-                        <option value="opus">opus</option>
-                        <option value="mp3">mp3</option>
-                        <option value="m4a">m4a</option>
-                        <option value="wav">wav</option>
-                        <option value="aac">aac</option>
-                        <option value="ogg">ogg</option>
-                        <option value="flac">flac</option>
-                    </select>
-                </div>
-
-                <div class="extra-input">
-                    <label>audio codec</label>
-                    <select id="audio-codec">
-                        <option value="aac">aac</option>
-                        <option value="opus">opus</option>
-                        <option value="mp3">mp3</option>
-                        <option value="vorbis">vorbis</option>
-                    </select>
+                    <div class="extra-input">
+                        <label>audio codec</label>
+                        <select id="audio-codec">
+                            <option value="aac">aac</option>
+                            <option value="opus">opus</option>
+                            <option value="mp3">mp3</option>
+                            <option value="vorbis">vorbis</option>
+                        </select>
+                    </div>
                 </div>
             </div>
         </div>
