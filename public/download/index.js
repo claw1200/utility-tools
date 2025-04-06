@@ -24,6 +24,17 @@ function download() {
     // hide error message
     error_message.style.display = 'none';
 
+    // URL validation
+    const urlRegex = /^(https?:\/\/)?([\da-z\.-]+)\.([a-z\.]{2,6})([\/\w \.-]*)*\/?$/;
+    if (!urlRegex.test(url)) {
+        error_display('Please enter a valid URL');
+        download_button.disabled = false;
+        download_button.innerText = 'download';
+        download_button.style.cursor = 'pointer';
+        download_button.style.pointerEvents = 'auto';
+        return;
+    }
+
     download_button.disabled = true;
     download_button.innerText = 'download starting';
     download_button.style.cursor = 'not-allowed';
@@ -237,8 +248,25 @@ document.addEventListener('DOMContentLoaded', function() {
 // }
 // );
 
+// Add debounce mechanism
+let lastFormatRequestTime = 0;
+const FORMAT_REQUEST_INTERVAL = 1000; // only lower this if you wanna get rate limited by the server lol
+
 function updateFormats(url) {
     if (!url) return;
+
+    // URL validation
+    const urlRegex = /^(https?:\/\/)?([\da-z\.-]+)\.([a-z\.]{2,6})([\/\w \.-]*)*\/?$/;
+    if (!urlRegex.test(url)) {
+        return;
+    }
+
+    // Check if enough time has passed since last request
+    const now = Date.now();
+    if (now - lastFormatRequestTime < FORMAT_REQUEST_INTERVAL) {
+        return;
+    }
+    lastFormatRequestTime = now;
 
     // Show loading state in download button
     const download_button = document.getElementById('download-button');
