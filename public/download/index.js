@@ -11,13 +11,15 @@ async function fetchCSRFToken() {
     }
 }
 
+
 function download() {
     const url = document.getElementById('url-input-box').value;
     const download_mode = document.getElementById('download-mode').value;
     const video_quality = document.getElementById('video-quality').value;
     const video_format = document.getElementById('video-format').value;
+    const video_codec = document.getElementById('video-codec').value;
     const audio_format = document.getElementById('audio-format').value;
-    const strict_formats = document.getElementById('strict-formats').value;
+    const audio_codec = document.getElementById('audio-codec').value;
     const download_button = document.getElementById('download-button');
     const error_message = document.getElementById('error-message');
 
@@ -25,13 +27,57 @@ function download() {
     error_message.style.display = 'none';
 
     // URL validation
-    const urlRegex = /^(https?:\/\/)?([\da-z\.-]+)\.([a-z\.]{2,6})([\/\w \.-]*)*\/?$/;
+    const urlRegex = /^(https?:\/\/)?([\da-z\.-]+)\.([a-z\.]{2,6})([\/\w \.-]*)*(\?[\w=&-]*)?$/;
     if (!urlRegex.test(url)) {
         error_display('Please enter a valid URL');
         download_button.disabled = false;
         download_button.innerText = 'download';
         download_button.style.cursor = 'pointer';
         download_button.style.pointerEvents = 'auto';
+        return;
+    }
+
+    // Get the selected format_id based on the current selections
+    let format_id = null;
+    if (download_mode === 'audio') {
+        const audioCombinations = window.currentAudioCombinations || [];
+        const selectedAudio = audioCombinations.find(combo => 
+            combo.format === audio_format && 
+            combo.codec === audio_codec
+        );
+        if (selectedAudio) {
+            format_id = selectedAudio.format_id;
+        }
+    } else {
+        const videoCombinations = window.currentVideoCombinations || [];
+        const audioCombinations = window.currentAudioCombinations || [];
+        
+        // Find the selected video format
+        const selectedVideo = videoCombinations.find(combo => 
+            combo.height === parseInt(video_quality) && 
+            combo.format === video_format && 
+            combo.codec === video_codec
+        );
+        
+        // Find the selected audio format
+        const selectedAudio = audioCombinations.find(combo => 
+            combo.format === audio_format && 
+            combo.codec === audio_codec
+        );
+
+        if (selectedVideo) {
+            if (selectedAudio) {
+                // Combine video and audio format IDs
+                format_id = `${selectedVideo.format_id}+${selectedAudio.format_id}`;
+            } else {
+                // Use just the video format if no audio selected
+                format_id = selectedVideo.format_id;
+            }
+        }
+    }
+
+    if (!format_id) {
+        error_display('Could not find matching format. Please try again.');
         return;
     }
 
@@ -49,10 +95,7 @@ function download() {
         body: JSON.stringify({
             url: url,
             download_mode: download_mode,
-            video_quality: video_quality,
-            video_format: video_format,
-            audio_format: audio_format,
-            strict_formats: strict_formats,
+            format_id: format_id
         }),
     })
     .then(async (response) => {
@@ -62,7 +105,7 @@ function download() {
         }
 
         if (response.status == 400) {
-            error_display('failed to find a file matching the given criteria 🤔\ntry changing your settings or disable strict formats');
+            error_display('failed to find a file matching the given criteria 🤔');
             return;
         }
 
@@ -256,7 +299,7 @@ function updateFormats(url) {
     if (!url) return;
 
     // URL validation
-    const urlRegex = /^(https?:\/\/)?([\da-z\.-]+)\.([a-z\.]{2,6})([\/\w \.-]*)*\/?$/;
+    const urlRegex = /^(https?:\/\/)?([\da-z\.-]+)\.([a-z\.]{2,6})([\/\w \.-]*)*(\?[\w=&-]*)?$/;
     if (!urlRegex.test(url)) {
         return;
     }
@@ -294,51 +337,61 @@ function updateFormats(url) {
             throw new Error(data.error);
         }
 
+        // Reset all selectors first
+        const videoQualitySelect = document.getElementById('video-quality');
+        const videoFormatSelect = document.getElementById('video-format');
+        const videoCodecSelect = document.getElementById('video-codec');
+        const audioFormatSelect = document.getElementById('audio-format');
+        const audioCodecSelect = document.getElementById('audio-codec');
+
+        videoQualitySelect.innerHTML = '';
+        videoFormatSelect.innerHTML = '';
+        videoCodecSelect.innerHTML = '';
+        audioFormatSelect.innerHTML = '';
+        audioCodecSelect.innerHTML = '';
+
         // Check if we need to switch modes based on available formats
         const downloadMode = document.getElementById('download-mode');
-        if (data.video_formats.length === 0 && downloadMode.value === 'auto') {
-            // Switch to audio mode if no video formats available
+        if (data.video_combinations.length === 0 && data.audio_combinations.length > 0) {
+            // Switch to audio mode if no video formats available but audio exists
             downloadMode.value = 'audio';
             updateFormatSelectorsVisibility('audio');
-        } else if (data.audio_formats.length === 0 && downloadMode.value === 'audio') {
-            // Switch to video mode if no audio formats available
+        } else if (data.audio_combinations.length === 0 && data.video_combinations.length > 0) {
+            // Switch to video mode if no audio formats available but video exists
             downloadMode.value = 'auto';
             updateFormatSelectorsVisibility('auto');
+        } else if (data.video_combinations.length === 0 && data.audio_combinations.length === 0) {
+            // No formats available at all
+            throw new Error('No formats available for this URL');
         }
 
-        // Update video format options
-        const videoFormatSelect = document.getElementById('video-format');
-        const currentVideoFormat = videoFormatSelect.value;
-        videoFormatSelect.innerHTML = '';
-        
-        data.video_formats.forEach(format => {
-            const option = document.createElement('option');
-            option.value = format;
-            option.textContent = format;
-            if (format === currentVideoFormat) {
-                option.selected = true;
-            }
-            videoFormatSelect.appendChild(option);
-        });
+        // Update video quality options if we have video formats
+        if (data.video_combinations.length > 0) {
+            // Update video format and codec options based on selected quality
+            updateVideoOptions(data.video_combinations, videoQualitySelect.value);
+        }
 
-        // Update audio format options
-        const audioFormatSelect = document.getElementById('audio-format');
-        const currentAudioFormat = audioFormatSelect.value;
-        audioFormatSelect.innerHTML = '';
-        
-        data.audio_formats.forEach(format => {
-            const option = document.createElement('option');
-            option.value = format;
-            option.textContent = format;
-            if (format === currentAudioFormat) {
-                option.selected = true;
-            }
-            audioFormatSelect.appendChild(option);
-        });
+        // Update audio format and codec options if we have audio formats
+        if (data.audio_combinations.length > 0) {
+            updateAudioOptions(data.audio_combinations);
+        }
     })
     .catch(error => {
         console.error('Error fetching formats:', error);
         error_display('failed to fetch formats for this link. try a different one?');
+        
+        // Reset all selectors on error
+        const videoQualitySelect = document.getElementById('video-quality');
+        const videoFormatSelect = document.getElementById('video-format');
+        const videoCodecSelect = document.getElementById('video-codec');
+        const audioFormatSelect = document.getElementById('audio-format');
+        const audioCodecSelect = document.getElementById('audio-codec');
+
+        videoQualitySelect.innerHTML = '';
+        videoFormatSelect.innerHTML = '';
+        videoCodecSelect.innerHTML = '';
+        audioFormatSelect.innerHTML = '';
+        audioCodecSelect.innerHTML = '';
     })
     .finally(() => {
         // Reset download button state
@@ -347,6 +400,149 @@ function updateFormats(url) {
         download_button.style.pointerEvents = 'auto';
         download_button.innerText = 'download';
     });
+}
+
+function updateVideoOptions(combinations, selectedQuality) {
+    // Store the current combinations for later use
+    window.currentVideoCombinations = combinations;
+    
+    const videoFormatSelect = document.getElementById('video-format');
+    const videoCodecSelect = document.getElementById('video-codec');
+    const videoQualitySelect = document.getElementById('video-quality');
+    const currentFormat = videoFormatSelect.value;
+    const currentCodec = videoCodecSelect.value;
+
+    // Get unique resolutions from combinations
+    const resolutions = new Set(combinations.map(combo => combo.height));
+    
+    // Update resolution options
+    videoQualitySelect.innerHTML = '';
+    Array.from(resolutions).sort((a, b) => b - a).forEach(resolution => {
+        const option = document.createElement('option');
+        option.value = resolution;
+        option.textContent = `${resolution}p`;
+        if (resolution.toString() === selectedQuality) {
+            option.selected = true;
+        }
+        videoQualitySelect.appendChild(option);
+    });
+
+    // Update format options based on selected resolution
+    function updateFormatOptions() {
+        const selectedResolution = parseInt(videoQualitySelect.value);
+        
+        // Filter combinations for selected resolution
+        const validCombinations = combinations.filter(combo => combo.height === selectedResolution);
+        
+        // Get unique formats for this resolution
+        const validFormats = new Set(validCombinations.map(combo => combo.format));
+        
+        videoFormatSelect.innerHTML = '';
+        validFormats.forEach(format => {
+            const option = document.createElement('option');
+            option.value = format;
+            option.textContent = format;
+            if (format === currentFormat) {
+                option.selected = true;
+            }
+            videoFormatSelect.appendChild(option);
+        });
+
+        // Update codec options based on selected format
+        updateCodecOptions();
+    }
+
+    // Update codec options based on selected format
+    function updateCodecOptions() {
+        const selectedResolution = parseInt(videoQualitySelect.value);
+        const selectedFormat = videoFormatSelect.value;
+        
+        // Filter combinations for selected resolution and format
+        const validCombinations = combinations.filter(combo => 
+            combo.height === selectedResolution && 
+            combo.format === selectedFormat
+        );
+        
+        // Get unique codecs for this resolution and format
+        const validCodecs = new Set(validCombinations.map(combo => combo.codec));
+        
+        videoCodecSelect.innerHTML = '';
+        validCodecs.forEach(codec => {
+            const option = document.createElement('option');
+            option.value = codec;
+            option.textContent = codec;
+            if (codec === currentCodec) {
+                option.selected = true;
+            }
+            videoCodecSelect.appendChild(option);
+        });
+    }
+
+    // Initial format update
+    updateFormatOptions();
+
+    // Add event listeners
+    videoQualitySelect.addEventListener('change', updateFormatOptions);
+    videoFormatSelect.addEventListener('change', updateCodecOptions);
+}
+
+function updateAudioOptions(combinations) {
+    // Store the current combinations for later use
+    window.currentAudioCombinations = combinations;
+    
+    const audioFormatSelect = document.getElementById('audio-format');
+    const audioCodecSelect = document.getElementById('audio-codec');
+    const currentFormat = audioFormatSelect.value;
+    const currentCodec = audioCodecSelect.value;
+
+    // Get unique formats and codecs
+    const validFormats = new Set();
+    const validCodecs = new Set();
+    const formatCodecMap = new Map();
+
+    combinations.forEach(combo => {
+        validFormats.add(combo.format);
+        validCodecs.add(combo.codec);
+        if (!formatCodecMap.has(combo.format)) {
+            formatCodecMap.set(combo.format, new Set());
+        }
+        formatCodecMap.get(combo.format).add(combo.codec);
+    });
+
+    // Update format options
+    audioFormatSelect.innerHTML = '';
+    validFormats.forEach(format => {
+        const option = document.createElement('option');
+        option.value = format;
+        option.textContent = format;
+        if (format === currentFormat) {
+            option.selected = true;
+        }
+        audioFormatSelect.appendChild(option);
+    });
+
+    // Update codec options based on selected format
+    function updateCodecOptions() {
+        const selectedFormat = audioFormatSelect.value;
+        const validCodecsForFormat = formatCodecMap.get(selectedFormat) || new Set();
+        
+        audioCodecSelect.innerHTML = '';
+        validCodecsForFormat.forEach(codec => {
+            const option = document.createElement('option');
+            option.value = codec;
+            option.textContent = codec;
+            if (codec === currentCodec) {
+                option.selected = true;
+            }
+            audioCodecSelect.appendChild(option);
+        });
+    }
+
+    // Initial codec update
+    updateCodecOptions();
+
+    // Add event listener for format changes
+    audioFormatSelect.addEventListener('change', updateCodecOptions);
 }
 
 // Add event listener for URL input changes
@@ -360,36 +556,52 @@ document.getElementById('url-input-box').addEventListener('input', function(e) {
 function updateFormatSelectorsVisibility(downloadMode) {
     const videoQuality = document.getElementById('video-quality');
     const videoFormat = document.getElementById('video-format');
+    const videoCodec = document.getElementById('video-codec');
     const audioFormat = document.getElementById('audio-format');
+    const audioCodec = document.getElementById('audio-codec');
     const videoQualityContainer = videoQuality.closest('.extra-input');
     const videoFormatContainer = videoFormat.closest('.extra-input');
+    const videoCodecContainer = videoCodec.closest('.extra-input');
     const audioFormatContainer = audioFormat.closest('.extra-input');
+    const audioCodecContainer = audioCodec.closest('.extra-input');
 
     if (downloadMode === 'auto') {
-        // Show video options
+        // Show both video and audio options
         videoQualityContainer.style.display = 'block';
         videoFormatContainer.style.display = 'block';
-        audioFormatContainer.style.display = 'none';
+        videoCodecContainer.style.display = 'block';
+        audioFormatContainer.style.display = 'block';
+        audioCodecContainer.style.display = 'block';
         
-        // Enable/disable video options
+        // Enable/disable options
         videoQuality.disabled = false;
         videoQuality.style.filter = 'none';
         videoFormat.disabled = false;
         videoFormat.style.filter = 'none';
-        audioFormat.disabled = true;
-        audioFormat.style.filter = 'grayscale(1)';
+        videoCodec.disabled = false;
+        videoCodec.style.filter = 'none';
+        audioFormat.disabled = false;
+        audioFormat.style.filter = 'none';
+        audioCodec.disabled = false;
+        audioCodec.style.filter = 'none';
     } else {
-        // Show audio options
+        // Show only audio options
         videoQualityContainer.style.display = 'none';
         videoFormatContainer.style.display = 'none';
+        videoCodecContainer.style.display = 'none';
         audioFormatContainer.style.display = 'block';
+        audioCodecContainer.style.display = 'block';
         
-        // Enable/disable audio options
+        // Enable/disable options
         videoQuality.disabled = true;
         videoQuality.style.filter = 'grayscale(1)';
         videoFormat.disabled = true;
         videoFormat.style.filter = 'grayscale(1)';
+        videoCodec.disabled = true;
+        videoCodec.style.filter = 'grayscale(1)';
         audioFormat.disabled = false;
         audioFormat.style.filter = 'none';
+        audioCodec.disabled = false;
+        audioCodec.style.filter = 'none';
     }
 }

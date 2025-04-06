@@ -61,12 +61,7 @@ def is_rate_limited(ip):
     # Check if too many requests
     return len(ip_request_count[ip]) > MAX_REQUESTS
 
-async def download_media_ytdlp(url, download_mode, video_quality, video_format, audio_format, strict_formats):
-    if strict_formats == "true":
-        strict_formats = True
-    else:
-        strict_formats = False
-
+async def download_media_ytdlp(url, download_mode, format_id=None):
     # Generate a unique download ID
     download_id = str(datetime.now().timestamp())
     download_progress[download_id] = 0
@@ -79,16 +74,28 @@ async def download_media_ytdlp(url, download_mode, video_quality, video_format, 
                 if total > 0:
                     progress = (downloaded / total) * 100
                     download_progress[download_id] = progress
-                    #logging.info(f"Download progress: {progress:.1f}%")
             except Exception as e:
                 logging.error(f"Error in progress hook: {e}")
 
-    # Configure yt-dlp options
+    # Configure yt-dlp options based on download mode
+    if download_mode == "audio":
+        if format_id:
+            download_setting_string = format_id
+        else:
+            download_setting_string = "bestaudio"
+    else:  # video mode
+        if format_id:
+            download_setting_string = format_id
+        else:
+            download_setting_string = "best"
+
+    print(f"\nAttempting download with format string: {download_setting_string}")
+
     ytdl_options = {
-        "format": "best",
+        "format": download_setting_string,
         "outtmpl": "temp/%(uploader)s - %(title).150B.%(ext)s",
-        "quiet": True,
-        "no_warnings": True,
+        "quiet": False,
+        "no_warnings": False,
         "noplaylist": True,
         "lazy_playlist": False,
         "playlist_items": "1",
@@ -100,50 +107,35 @@ async def download_media_ytdlp(url, download_mode, video_quality, video_format, 
         "postprocessors": [{
             "key": "FFmpegMetadata"
         }],
+        "merge_output_format": "mp4"  # Ensure final output is mp4
     }
-
-    filesize_limit = "100M" # as this applies to both audio and video, max file size is theoretically 200M
-
-    non_strict_video = f"bestvideo[filesize<={filesize_limit}][height<={video_quality}]+bestaudio/bestvideo[filesize<={filesize_limit}]+bestaudio/best[filesize<={filesize_limit}]"
-    non_strict_audio = f"bestaudio/best[filesize<={filesize_limit}]"
-
-    # default options
-    if video_quality == "auto":
-        video_quality = "360"
-    if audio_format == "auto":
-        audio_format = "mp3"
-    if video_format == "auto":
-        video_format = "mp4"
-
-    if download_mode == "audio":
-        download_setting_string = f"""
-        bestaudio[ext={audio_format}]/
-        """
-        if strict_formats == False:
-            #append non-strict formats
-            download_setting_string += non_strict_audio
-
-    if download_mode == "auto":
-        download_setting_string = f"""
-        bestvideo[filesize<={filesize_limit}][height<={video_quality}][ext={video_format}]+bestaudio/
-        """
-        if strict_formats == False:
-            #append non-strict formats
-            download_setting_string += non_strict_video
-
-    ytdl_options["format"] = download_setting_string
 
     ytdl = yt_dlp.YoutubeDL(ytdl_options)
 
     # Run blocking operations in thread pool
     loop = asyncio.get_event_loop()
     try:
+        # First get format information without downloading
+        ytdl_info = yt_dlp.YoutubeDL({
+            **ytdl_options,
+            "format": "best",
+            "listformats": True,  # This will list all available formats
+        })
+
+        # Get format information first
+        format_info = await loop.run_in_executor(
+            None,
+            partial(ytdl_info.extract_info, url, download=False),
+        )
+
+        # Now try the actual download
         info = await loop.run_in_executor(
             None,
             partial(ytdl.extract_info, url, download=True),
         )
 
     except yt_dlp.DownloadError as e:
+        print(f"\nDownload error: {str(e)}")
         return jsonify({
             "error": str(e)
         }), download_id
@@ -198,16 +190,13 @@ def download_node():
     logging.info("Received download request")
     url = request.json.get('url')
     download_mode = request.json.get('download_mode')
-    video_quality = request.json.get('video_quality')
-    video_format = request.json.get('video_format')
-    audio_format = request.json.get('audio_format')
-    strict_formats = request.json.get('strict_formats')
+    format_id = request.json.get('format_id')  # New parameter
 
-    logging.info(f"Request as follows:\nURL: {url}\nDownload Mode: {download_mode}\nVideo Quality: {video_quality}\nVideo Format: {video_format}\nAudio Format: {audio_format}\nStrict Formats: {strict_formats}")
+    logging.info(f"Request as follows:\nURL: {url}\nDownload Mode: {download_mode}\nFormat ID: {format_id}")
 
     try:
         # Get the download information
-        response, download_id = asyncio.run(download_media_ytdlp(url, download_mode, video_quality, video_format, audio_format, strict_formats))
+        response, download_id = asyncio.run(download_media_ytdlp(url, download_mode, format_id))
         
         if response.json['error'] != "none":
             return jsonify({"error": response.json['error']}), 400
@@ -389,62 +378,88 @@ def check_csrf():
 
 @app.route('/get_formats', methods=['POST'])
 def get_formats():
-    client_ip = request.remote_addr
-    
-    if client_ip in BANNED_IPS:
-        return jsonify({"error": "Access denied"}), 403
-        
-    if is_rate_limited(client_ip):
-        return jsonify({
-            "error": f"Rate limit exceeded. Please wait {RATE_LIMIT_MINUTES} minutes."
-        }), 429
-
     url = request.json.get('url')
     if not url:
         return jsonify({"error": "URL is required"}), 400
 
     try:
-        ytdl_options = {
+        # Configure yt-dlp to get format information
+        ytdl = yt_dlp.YoutubeDL({
             "quiet": True,
             "no_warnings": True,
+            "extract_flat": True,
+            "listformats": True,
             "noplaylist": True,
             "lazy_playlist": False,
             "playlist_items": "1",
             "nocheckcertificate": True,
             "cookiefile": ".cookies",
             "color": "never",
-        }
+        })
 
-        ytdl = yt_dlp.YoutubeDL(ytdl_options)
+        # Get format information
         info = ytdl.extract_info(url, download=False)
         
-        if "entries" in info:
-            info = info["entries"][0]
+        if not info or 'formats' not in info:
+            return jsonify({"error": "No formats found"}), 400
 
-        formats = info.get('formats', [])
-        
-        # Extract unique video and audio formats
-        video_formats = set()
-        audio_formats = set()
-        
-        for f in formats:
-            if f.get('vcodec', 'none') != 'none':
-                ext = f.get('ext', '')
-                if ext:
-                    video_formats.add(ext)
-            if f.get('acodec', 'none') != 'none':
-                ext = f.get('ext', '')
-                if ext:
-                    audio_formats.add(ext)
+        # Extract valid format combinations
+        video_combinations = []
+        audio_combinations = []
+
+        for f in info['formats']:
+            # Skip formats without video or audio
+            if not f.get('vcodec') and not f.get('acodec'):
+                continue
+
+            # Handle video formats
+            if f.get('vcodec') and f.get('vcodec') != 'none':
+                height = f.get('height', 0)
+                if height:
+                    # Keep the full codec name and add format_id
+                    vcodec = f.get('vcodec', '')
+                    video_combinations.append({
+                        'format': f.get('ext', ''),
+                        'codec': vcodec,
+                        'height': height,
+                        'format_id': f.get('format_id'),
+                        'filesize': f.get('filesize', 0)
+                    })
+
+            # Handle audio formats
+            if f.get('acodec') and f.get('acodec') != 'none':
+                # Keep the full codec name and add format_id
+                acodec = f.get('acodec', '')
+                audio_combinations.append({
+                    'format': f.get('ext', ''),
+                    'codec': acodec,
+                    'format_id': f.get('format_id'),
+                    'filesize': f.get('filesize', 0)
+                })
+
+        # Remove duplicates and sort
+        video_combinations = [dict(t) for t in {tuple(d.items()) for d in video_combinations}]
+        audio_combinations = [dict(t) for t in {tuple(d.items()) for d in audio_combinations}]
+
+        # Sort video combinations by height in descending order
+        video_combinations.sort(key=lambda x: x['height'], reverse=True)
+
+        # Log the combinations we're returning
+        print("\nReturning video combinations:")
+        for combo in video_combinations:
+            print(f"  {combo}")
+        print("\nReturning audio combinations:")
+        for combo in audio_combinations:
+            print(f"  {combo}")
 
         return jsonify({
-            "video_formats": list(video_formats),
-            "audio_formats": list(audio_formats)
+            'video_combinations': video_combinations,
+            'audio_combinations': audio_combinations
         })
 
     except Exception as e:
         logging.error(f"Error getting formats: {e}")
-        return jsonify({"error": str(e)}), 400
+        return jsonify({"error": str(e)}), 500
 
 
 # Serve the main index.html
