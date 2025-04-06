@@ -7,6 +7,9 @@
     --button-light: #007bff;
     --button-hover-light: #0056b3;    
     --wave-color-light: rgba(255, 255, 255, 0.3);
+    --widget-bg-dark: #1a1a1a;
+    --input-bg-dark: #2a2a2a;
+    --input-border-dark: #3a3a3a;
 }
 
 body {
@@ -29,8 +32,12 @@ body.loaded {
     padding: 3rem;
     border-radius: 12px;
     box-shadow: 0 0 15px rgba(0,0,0,0.1);
-    background-color: var(--widget-bg-light);
+    background-color: var(--widget-bg-dark);
     transition: background-color 0.3s;
+}
+
+body.loaded .widget {
+    background-color: var(--widget-bg-light);
 }
 
 .error-message {
@@ -65,12 +72,17 @@ body.loaded {
     width: 100%;
     padding: 0.75rem;
     border-radius: 6px;
-    border: 1px solid var(--border-light);
-    background-color: var(--widget-bg-light);
+    border: 1px solid var(--input-border-dark);
+    background-color: var(--input-bg-dark);
     color: var(--text-light);
     outline-style: none;
     transition: border-color 0.3s, background-color 0.3s, color 0.3s, filter 0.3s;
     font-size: 1.2rem;
+}
+
+body.loaded .extra-input select {
+    border: 1px solid var(--border-light);
+    background-color: var(--widget-bg-light);
 }
 
 label {
@@ -82,12 +94,17 @@ label {
 input {
     width: 95%;
     padding: 0.75rem;
-    border: 1px solid var(--border-light);
+    border: 1px solid var(--input-border-dark);
     border-radius: 6px;
-    background-color: var(--widget-bg-light);
+    background-color: var(--input-bg-dark);
     color: var(--text-light);
     transition: border-color 0.3s, background-color 0.3s, color 0.3s;
     font-size: 1.2rem;
+}
+
+body.loaded input {
+    border: 1px solid var(--border-light);
+    background-color: var(--widget-bg-light);
 }
 
 button {

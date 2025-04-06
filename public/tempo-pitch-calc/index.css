@@ -1,4 +1,3 @@
-
 :root {
     --bg-light: #f0f0f0;
     --widget-bg-light: #ffffff;
@@ -8,6 +7,9 @@
     --button-light: #007bff;
     --button-hover-light: #0056b3;    
     --wave-color-light: rgba(255, 255, 255, 0.3);
+    --widget-bg-dark: #1a1a1a;
+    --input-bg-dark: #2a2a2a;
+    --input-border-dark: #3a3a3a;
 }
 
 body {
@@ -29,30 +31,55 @@ body.loaded {
   padding: 3rem;
   border-radius: 12px;
   box-shadow: 0 0 15px rgba(0,0,0,0.1);
-  background-color: var(--widget-bg-light);
+  background-color: var(--widget-bg-dark);
   transition: background-color 0.3s;
+}
+
+body.loaded .widget {
+  background-color: var(--widget-bg-light);
 }
 
 .input-group {
   margin-bottom: 1.5rem;
 }
 
-
-
 label {
   display: block;
   margin-bottom: 0.75rem;
   font-size: 1.35rem;
 }
+
 input {
   width: 95%;
   padding: 0.75rem;
-  border: 1px solid var(--border-light);
+  border: 1px solid var(--input-border-dark);
   border-radius: 6px;
-  background-color: var(--widget-bg-light);
+  background-color: var(--input-bg-dark);
   color: var(--text-light);
   transition: border-color 0.3s, background-color 0.3s, color 0.3s;
   font-size: 1.2rem;
+}
+
+body.loaded input {
+  border: 1px solid var(--border-light);
+  background-color: var(--widget-bg-light);
+}
+
+.setting-item select {
+  width: 100%;
+  padding: 0.75rem;
+  border-radius: 6px;
+  border: 1px solid var(--input-border-dark);
+  background-color: var(--input-bg-dark);
+  color: var(--text-light);
+  outline-style: none;
+  transition: border-color 0.3s, background-color 0.3s, color 0.3s;
+  font-size: 1.2rem;
+}
+
+body.loaded .setting-item select {
+  border: 1px solid var(--border-light);
+  background-color: var(--widget-bg-light);
 }
 
 button {
@@ -137,22 +164,6 @@ button:hover {
   max-width: 225px;
 }
 
-.setting-item select {
-  width: 100%;
-  padding: 0.75rem;
-  border-radius: 6px;
-  border: 1px solid var(--border-light);
-  background-color: var(--widget-bg-light);
-  color: var(--text-light);
-  outline-style: none;
-  transition: border-color 0.3s, background-color 0.3s, color 0.3s;
-  font-size: 1.2rem;
-}
-
-.setting-item input {
-  max-width: 89%;
-}
-
 .footer {
   text-align: center;
   margin-top: 3rem;
@@ -174,7 +185,6 @@ button:hover {
 .footer a:hover {
   color: var(--button-hover-light);
 }
-
 
 .wave-container {
   position: fixed;
@@ -235,7 +245,6 @@ button:hover {
     );
   }
 }
-
 
 /* Mobile styles - must come after base styles to override them */
 @media (max-width: 500px) {
