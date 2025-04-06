@@ -11,80 +11,79 @@ async function fetchCSRFToken() {
     }
 }
 
+// Helper functions
+function updateDownloadButton(state, text = null) {
+    const download_button = document.getElementById('download-button');
+    download_button.disabled = state === 'disabled';
+    download_button.style.cursor = state === 'disabled' ? 'not-allowed' : 'pointer';
+    download_button.style.pointerEvents = state === 'disabled' ? 'none' : 'auto';
+    download_button.innerText = text || (state === 'disabled' ? 'download starting' : 'download');
+}
+
+function updateProgressBar(progress_percentage) {
+    const progress = document.getElementById('progress');
+    progress.style.display = 'block';
+    progress.style.width = `${progress_percentage}%`;
+    updateDownloadButton('disabled', `${progress_percentage}%`);
+}
+
+function getFormatId(download_mode, settings) {
+    if (download_mode === 'audio') {
+        const audioCombinations = window.currentAudioCombinations || [];
+        const selectedAudio = audioCombinations.find(combo => 
+            combo.format === settings.audio_format && 
+            combo.codec === settings.audio_codec
+        );
+        return selectedAudio?.format_id;
+    }
+
+    const videoCombinations = window.currentVideoCombinations || [];
+    const audioCombinations = window.currentAudioCombinations || [];
+    
+    const selectedVideo = videoCombinations.find(combo => 
+        combo.height === parseInt(settings.video_quality) && 
+        combo.format === settings.video_format && 
+        combo.codec === settings.video_codec
+    );
+    
+    const selectedAudio = audioCombinations.find(combo => 
+        combo.format === settings.audio_format && 
+        combo.codec === settings.audio_codec
+    );
+
+    if (!selectedVideo) return null;
+    return selectedAudio ? `${selectedVideo.format_id}+${selectedAudio.format_id}` : selectedVideo.format_id;
+}
 
 function download() {
-    const url = document.getElementById('url-input-box').value;
-    const download_mode = document.getElementById('download-mode').value;
-    const video_quality = document.getElementById('video-quality').value;
-    const video_format = document.getElementById('video-format').value;
-    const video_codec = document.getElementById('video-codec').value;
-    const audio_format = document.getElementById('audio-format').value;
-    const audio_codec = document.getElementById('audio-codec').value;
-    const download_button = document.getElementById('download-button');
-    const error_message = document.getElementById('error-message');
+    const settings = {
+        url: document.getElementById('url-input-box').value,
+        download_mode: document.getElementById('download-mode').value,
+        video_quality: document.getElementById('video-quality').value,
+        video_format: document.getElementById('video-format').value,
+        video_codec: document.getElementById('video-codec').value,
+        audio_format: document.getElementById('audio-format').value,
+        audio_codec: document.getElementById('audio-codec').value
+    };
 
-    // hide error message
+    const error_message = document.getElementById('error-message');
     error_message.style.display = 'none';
 
     // URL validation
     const urlRegex = /^(https?:\/\/)?([\da-z\.-]+)\.([a-z\.]{2,6})([\/\w \.-]*)*(\?[\w=&-]*)?$/;
-    if (!urlRegex.test(url)) {
+    if (!urlRegex.test(settings.url)) {
         error_display('Please enter a valid URL');
-        download_button.disabled = false;
-        download_button.innerText = 'download';
-        download_button.style.cursor = 'pointer';
-        download_button.style.pointerEvents = 'auto';
+        updateDownloadButton('enabled');
         return;
     }
 
-    // Get the selected format_id based on the current selections
-    let format_id = null;
-    if (download_mode === 'audio') {
-        const audioCombinations = window.currentAudioCombinations || [];
-        const selectedAudio = audioCombinations.find(combo => 
-            combo.format === audio_format && 
-            combo.codec === audio_codec
-        );
-        if (selectedAudio) {
-            format_id = selectedAudio.format_id;
-        }
-    } else {
-        const videoCombinations = window.currentVideoCombinations || [];
-        const audioCombinations = window.currentAudioCombinations || [];
-        
-        // Find the selected video format
-        const selectedVideo = videoCombinations.find(combo => 
-            combo.height === parseInt(video_quality) && 
-            combo.format === video_format && 
-            combo.codec === video_codec
-        );
-        
-        // Find the selected audio format
-        const selectedAudio = audioCombinations.find(combo => 
-            combo.format === audio_format && 
-            combo.codec === audio_codec
-        );
-
-        if (selectedVideo) {
-            if (selectedAudio) {
-                // Combine video and audio format IDs
-                format_id = `${selectedVideo.format_id}+${selectedAudio.format_id}`;
-            } else {
-                // Use just the video format if no audio selected
-                format_id = selectedVideo.format_id;
-            }
-        }
-    }
-
+    const format_id = getFormatId(settings.download_mode, settings);
     if (!format_id) {
         error_display('Could not find matching format. Please try again.');
         return;
     }
 
-    download_button.disabled = true;
-    download_button.innerText = 'download starting';
-    download_button.style.cursor = 'not-allowed';
-    download_button.style.pointerEvents = 'none';
+    updateDownloadButton('disabled');
 
     fetch('/download_node', {
         method: 'POST',
@@ -93,49 +92,35 @@ function download() {
             'X-CSRF-Token': csrfToken
         },
         body: JSON.stringify({
-            url: url,
-            download_mode: download_mode,
+            url: settings.url,
+            download_mode: settings.download_mode,
             format_id: format_id
         }),
     })
     .then(async (response) => {
-        if (response.status == 429) {
+        if (response.status === 429) {
             error_display('slow it down buddy, and try again in a moment 🥶');
             return;
         }
-
-        if (response.status == 400) {
+        if (response.status === 400) {
             error_display('failed to find a file matching the given criteria 🤔');
             return;
         }
-
-        else if (response.status != 200) {
+        if (response.status !== 200) {
             throw new Error('Failed to fetch');
         }
 
         // Get filename from the Content-Disposition header
         const contentDisposition = response.headers.get('Content-Disposition');
         let filename = contentDisposition ? contentDisposition.split('=')[1] : 'downloaded_file';
-        // decode filename to support special characters
         filename = decodeURIComponent(filename);
-
-        console.log(`Downloading file: ${filename}`);
 
         // Get total file size from the Content-Length header
         const contentLength = response.headers.get('Content-Length');
-        if (!contentLength) {
-            console.warn('Content-Length header is missing');
-        }
         const total_size = contentLength ? parseInt(contentLength, 10) : 0;
         let downloaded = 0;
 
-        // select the progress bar element
         const progress = document.getElementById('progress');
-
-        // select the download button
-        const download_button = document.getElementById('download-button');
-
-
         const reader = response.body.getReader();
         const stream = new ReadableStream({
             start(controller) {
@@ -143,24 +128,13 @@ function download() {
                     reader.read().then(({ done, value }) => {
                         if (done) {
                             controller.close();
-                            //console.log('Download complete.');
                             return;
                         }
 
                         downloaded += value.length;
                         if (total_size) {
                             const progress_percentage = ((downloaded / total_size) * 100).toFixed(0);
-                            //console.log(`Progress: ${progress_percentage}%`);
-                            // Update progress bar
-                            progress.style.display = 'block';
-                            progress.style.width = `${progress_percentage}%`;
-
-                            // Disable the download button
-                            download_button.disabled = true;
-                            download_button.style.cursor = 'not-allowed';
-                            download_button.innerText = `${progress_percentage}%`;
-                            // disable the download button hover effect 
-                            download_button.style.pointerEvents = 'none';
+                            updateProgressBar(progress_percentage);
                         }
 
                         controller.enqueue(value);
@@ -174,10 +148,8 @@ function download() {
             },
         });
 
-        // Convert the stream into a blob
+        // Convert the stream into a blob and trigger download
         const responseBlob = await new Response(stream).blob();
-
-        // Create a download link and trigger it
         const downloadUrl = window.URL.createObjectURL(responseBlob);
         const a = document.createElement('a');
         a.href = downloadUrl;
@@ -186,19 +158,13 @@ function download() {
         a.click();
         a.remove();
 
-        // Remove the progress bar after download is complete
+        // Reset UI
         progress.style.display = 'none';
-
-        // Enable the download button
-        download_button.disabled = false;
-        download_button.style.cursor = 'pointer';
-        download_button.style.pointerEvents = 'auto';
-        // Change the download button text
-        download_button.innerText = 'download';
+        updateDownloadButton('enabled');
     })
     .catch(error => {
+        console.error(error);
         error_display("something went wrong (but idk what it is) 😱");
-        console.error(error)
     });
 }
 
