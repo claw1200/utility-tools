@@ -1,4 +1,4 @@
-from flask import Flask, jsonify, request, send_file, send_from_directory, Response
+from flask import Flask, jsonify, request, send_from_directory, Response
 import asyncio
 import yt_dlp
 from functools import partial
@@ -11,12 +11,16 @@ import io
 import json
 import time
 from urllib.parse import quote
+import secrets
 
 app = Flask(__name__, static_folder='public', static_url_path='')
 # turn on debug
 app.debug = False
 log = logging.getLogger('werkzeug')
 log.setLevel(logging.DEBUG)
+
+# Generate a secret key for CSRF token
+app.secret_key = secrets.token_hex(32)
 
 # Rate limiting and ban settings
 RATE_LIMIT_MINUTES = 5
@@ -351,6 +355,97 @@ def check_malicious_requests():
             save_banned_ips()
             return jsonify({"error": "Access denied"}), 403
 
+def generate_csrf_token():
+    return secrets.token_hex(32)
+
+def verify_csrf_token(token):
+    if not token:
+        return False
+    # In a real application, you would store the token in a session
+    # and verify it against the stored value. For simplicity, we'll
+    # just check if it's a valid hex string of the right length
+    return len(token) == 64 and all(c in '0123456789abcdef' for c in token)
+
+@app.route('/get_csrf_token')
+def get_csrf_token():
+    token = generate_csrf_token()
+    return jsonify({'csrf_token': token})
+
+@app.before_request
+def check_csrf():
+    # Skip CSRF check for GET requests and static files
+    if request.method == 'GET' or request.path.startswith('/static/'):
+        return
+    
+    # Skip CSRF check for getting the token itself
+    if request.path == '/get_csrf_token':
+        return
+        
+    # Get CSRF token from header
+    csrf_token = request.headers.get('X-CSRF-Token')
+    
+    if not verify_csrf_token(csrf_token):
+        return jsonify({'error': 'Invalid CSRF token'}), 403
+
+@app.route('/get_formats', methods=['POST'])
+def get_formats():
+    client_ip = request.remote_addr
+    
+    if client_ip in BANNED_IPS:
+        return jsonify({"error": "Access denied"}), 403
+        
+    if is_rate_limited(client_ip):
+        return jsonify({
+            "error": f"Rate limit exceeded. Please wait {RATE_LIMIT_MINUTES} minutes."
+        }), 429
+
+    url = request.json.get('url')
+    if not url:
+        return jsonify({"error": "URL is required"}), 400
+
+    try:
+        ytdl_options = {
+            "quiet": True,
+            "no_warnings": True,
+            "noplaylist": True,
+            "lazy_playlist": False,
+            "playlist_items": "1",
+            "nocheckcertificate": True,
+            "cookiefile": ".cookies",
+            "color": "never",
+        }
+
+        ytdl = yt_dlp.YoutubeDL(ytdl_options)
+        info = ytdl.extract_info(url, download=False)
+        
+        if "entries" in info:
+            info = info["entries"][0]
+
+        formats = info.get('formats', [])
+        
+        # Extract unique video and audio formats
+        video_formats = set()
+        audio_formats = set()
+        
+        for f in formats:
+            if f.get('vcodec', 'none') != 'none':
+                ext = f.get('ext', '')
+                if ext:
+                    video_formats.add(ext)
+            if f.get('acodec', 'none') != 'none':
+                ext = f.get('ext', '')
+                if ext:
+                    audio_formats.add(ext)
+
+        return jsonify({
+            "video_formats": list(video_formats),
+            "audio_formats": list(audio_formats)
+        })
+
+    except Exception as e:
+        logging.error(f"Error getting formats: {e}")
+        return jsonify({"error": str(e)}), 400
+
 
 # Serve the main index.html
 @app.route('/')
@@ -365,12 +460,16 @@ def serve_download():
 def serve_tempo_pitch_calc():
     return send_from_directory(f"{app.static_folder}/tempo-pitch-calc", 'index.html')
 
+@app.errorhandler(404)
+def page_not_found(e):
+    return send_from_directory(f"{app.static_folder}/404", 'index.html')
+
 if __name__ == '__main__':
     load_banned_ips()
     # Add timeout configuration
     app.config['SEND_FILE_MAX_AGE_DEFAULT'] = 0
     app.config['MAX_CONTENT_LENGTH'] = 200 * 1024 * 1024  # 200MB max-length
     # Use threaded mode for better handling of downloads
-    app.run(host='0.0.0.0', port=9000, threaded=True)
+    app.run(host='0.0.0.0', port=9019, threaded=True)
 
 

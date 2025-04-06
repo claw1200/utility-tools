@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FFmpeg WASM in Browser</title>
+    <script src="https://cdn.jsdelivr.net/npm/@ffmpeg/ffmpeg@latest"></script> <!-- Use CDN -->
+    <!-- OR use the local path if you're hosting the files locally -->
+    <!-- <script src="ffmpeg.min.js"></script> -->
+</head>
+<body>
+    <h1>FFmpeg in the Browser</h1>
+    
+    <!-- File input to upload a video -->
+    <input type="file" id="fileInput" />
+    <button id="processBtn">Process Video</button>
+    
+    <script>
+        const { createFFmpeg, fetchFile } = FFmpeg;
+
+        const ffmpeg = createFFmpeg({ log: true });
+
+        async function loadFFmpeg() {
+            console.log('Loading FFmpeg...');
+            await ffmpeg.load();
+            console.log('FFmpeg loaded');
+        }
+
+        async function processVideo() {
+            const fileInput = document.getElementById('fileInput');
+            const file = fileInput.files[0];
+
+            if (file) {
+                const fileName = file.name;
+
+                // Write the uploaded file to FFmpeg's virtual file system
+                await ffmpeg.FS('writeFile', fileName, await fetchFile(file));
+
+                // Run an FFmpeg command (e.g., convert video to another format)
+                await ffmpeg.run('-i', fileName, 'output.mp4');
+
+                // Read the output file
+                const data = ffmpeg.FS('readFile', 'output.mp4');
+
+                // Create a URL for the processed file and download it
+                const videoBlob = new Blob([data.buffer], { type: 'video/mp4' });
+                const videoURL = URL.createObjectURL(videoBlob);
+                const downloadLink = document.createElement('a');
+                downloadLink.href = videoURL;
+                downloadLink.download = 'output.mp4';
+                downloadLink.click();
+            } else {
+                alert('Please upload a file first!');
+            }
+        }
+
+        // Initialize FFmpeg and setup button click handler
+        document.getElementById('processBtn').addEventListener('click', processVideo);
+        loadFFmpeg();
+    </script>
+</body>
+</html>

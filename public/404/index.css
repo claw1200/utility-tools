@@ -1,28 +1,28 @@
-
 :root {
-    --bg-light: #f0f0f0;
-    --widget-bg-light: #ffffff;
-    --text-light: #333333;
-    --text-secondary-light: #555555;
-    --border-light: #cccccc;
-    --button-light: #007bff;
-    --button-hover-light: #0056b3;    
-    --wave-color-light: rgba(255, 255, 255, 0.3);
+  --bg-light: #f0f0f0;
+  --widget-bg-light: #ffffff;
+  --text-light: #333333;
+  --text-secondary-light: #555555;
+  --border-light: #cccccc;
+  --button-light: #007bff;
+  --button-hover-light: #0056b3;    
+  --wave-color-light: rgba(255, 255, 255, 0.3);
 }
 
 body {
-    font-family: Arial, sans-serif;
-    margin: 0;
-    padding: 0;
-    background-color: black;
-    color: var(--text-light);
-    transition: background-color 0.3s, color 0.3s;
+  font-family: Arial, sans-serif;
+  margin: 0;
+  padding: 0;
+  background-color: black;
+  color: var(--text-light);
+  transition: background-color 0.3s, color 0.3s;
 }
 
 body.loaded {
-    background-color: var(--bg-light);
+  background-color: var(--bg-light);
 }
 
+/* Base styles */
 .widget {
   max-width: 675px;
   margin: 3rem auto;
@@ -33,17 +33,52 @@ body.loaded {
   transition: background-color 0.3s;
 }
 
+.error-message {
+display: none;
+align-self: center;
+text-align: center;
+}
+
 .input-group {
   margin-bottom: 1.5rem;
 }
 
+.extra-inputs-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-top: 1.5rem;
+  margin-bottom: 1.5rem;
+}
 
+.extra-input {
+  flex: 1;
+  min-width: 180px;
+}
+
+.extra-input label {
+  margin-bottom: 0.375rem;
+  font-size: 1.35rem;
+}
+
+.extra-input select {
+  width: 100%;
+  padding: 0.75rem;
+  border-radius: 6px;
+  border: 1px solid var(--border-light);
+  background-color: var(--widget-bg-light);
+  color: var(--text-light);
+  outline-style: none;
+  transition: border-color 0.3s, background-color 0.3s, color 0.3s, filter 0.3s;
+  font-size: 1.2rem;
+}
 
 label {
   display: block;
   margin-bottom: 0.75rem;
   font-size: 1.35rem;
 }
+
 input {
   width: 95%;
   padding: 0.75rem;
@@ -175,67 +210,81 @@ button:hover {
   color: var(--button-hover-light);
 }
 
+.progress-bar {
+width: 100%;
+background-color: var(--widget-bg-light);
+border-radius: 6px;
+overflow: hidden;
+margin-top: 1.5rem;
+transition: background-color 0.3s;
+}
+
+.progress {
+height: 1.5rem;
+background-color: var(--button-light);
+width: 0;
+transition: width 0.3s, background-color 0.3s;
+}
 
 .wave-container {
-  position: fixed;
-  width: 100%;
-  height: 100%;
-  top: 0;
-  left: 0;
-  overflow: hidden;
-  z-index: -1;
+position: fixed;
+width: 100%;
+height: 100%;
+top: 0;
+left: 0;
+overflow: hidden;
+z-index: -1;
 }
 
 .wave {
-  position: absolute;
-  width: 200%;
-  height: 200%;
-  background: linear-gradient(
-    45deg,
-    var(--wave-color-light) 0%,
-    var(--wave-color-dark) 100%
-  );
-  opacity: 0.5;
-  border-radius: 40%;
-  animation: wave 120s infinite linear;
-  transform-origin: 50% 48%;
-  bottom: -100%;
+position: absolute;
+width: 200%;
+height: 200%;
+background: linear-gradient(
+  45deg,
+  var(--wave-color-light) 0%,
+  var(--wave-color-dark) 100%
+);
+opacity: 0.5;
+border-radius: 40%;
+animation: wave 120s infinite linear;
+transform-origin: 50% 48%;
+bottom: -100%;
 }
 
 .wave2 {
-  animation: wave 240s infinite linear;
-  opacity: 0.3;
+animation: wave 240s infinite linear;
+opacity: 0.3;
 }
 
 .wave3 {
-  animation: wave 200s infinite linear;
-  opacity: 0.2;
+animation: wave 200s infinite linear;
+opacity: 0.2;
 }
 
 .wave4 {
-  animation: wave 100s infinite linear;
-  opacity: 0.1;
+animation: wave 100s infinite linear;
+opacity: 0.1;
 }
 
 @keyframes wave {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
+from {
+  transform: rotate(0deg);
+}
+to {
+  transform: rotate(360deg);
+}
 }
 
 @media (prefers-color-scheme: dark) {
-  .wave {
-    background: linear-gradient(
-      45deg,
-      var(--wave-color-dark) 0%,
-      var(--wave-color-light) 100%
-    );
-  }
+.wave {
+  background: linear-gradient(
+    45deg,
+    var(--wave-color-dark) 0%,
+    var(--wave-color-light) 100%
+  );
 }
-
+}
 
 /* Mobile styles - must come after base styles to override them */
 @media (max-width: 500px) {

@@ -1,4 +1,15 @@
+// Add CSRF token handling
+let csrfToken = null;
 
+async function fetchCSRFToken() {
+    try {
+        const response = await fetch('/get_csrf_token');
+        const data = await response.json();
+        csrfToken = data.csrf_token;
+    } catch (error) {
+        console.error('Error fetching CSRF token:', error);
+    }
+}
 
 function download() {
     const url = document.getElementById('url-input-box').value;
@@ -22,6 +33,7 @@ function download() {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
+            'X-CSRF-Token': csrfToken
         },
         body: JSON.stringify({
             url: url,
@@ -182,27 +194,8 @@ document.querySelector('.menu-icon').addEventListener('click', function() {
 
 // Add event listener for download type selction change
 document.getElementById('download-mode').addEventListener('change', function(e) {
-    const videoQuality = document.getElementById('video-quality');
-    const videoFormat = document.getElementById('video-format');
-    const audioFormat = document.getElementById('audio-format');
-    if (e.target.value === 'auto') {
-        videoQuality.disabled = false;
-        videoQuality.style.filter = 'none';
-        videoFormat.disabled = false;
-        videoFormat.style.filter = 'none';
-        audioFormat.disabled = true;
-        audioFormat.style.filter = 'grayscale(1)';
-    }
-    else {
-        videoQuality.disabled = true;
-        videoQuality.style.filter = 'grayscale(1)';
-        videoFormat.disabled = true;
-        videoFormat.style.filter = 'grayscale(1)';
-        audioFormat.disabled = false;
-        audioFormat.style.filter = 'none';
-    }
-}
-);
+    updateFormatSelectorsVisibility(e.target.value);
+});
 
 
 function get_theme_cookie() {
@@ -228,17 +221,13 @@ document.getElementById('theme-select').addEventListener('change', theme_updated
 document.addEventListener('DOMContentLoaded', function() {
     get_theme_cookie();
     document.body.classList.add('loaded');
-    const videoQuality = document.getElementById('video-quality');
-    const videoFormat = document.getElementById('video-format');
-    const audioFormat = document.getElementById('audio-format');
-
-    audioFormat.disabled = true;
-    audioFormat.style.filter = 'grayscale(1)';
-    videoFormat.disabled = false;
-    videoFormat.style.filter = 'none';
-    videoQuality.disabled = false;
-    videoQuality.value = '720';
-    videoQuality.style.filter = 'none';
+    
+    // Set initial visibility based on default download mode
+    const defaultDownloadMode = document.getElementById('download-mode').value;
+    updateFormatSelectorsVisibility(defaultDownloadMode);
+    
+    // Fetch CSRF token
+    fetchCSRFToken();
 });
 
 // window.addEventListener('pageshow', function(event) {
@@ -247,3 +236,132 @@ document.addEventListener('DOMContentLoaded', function() {
 //     }
 // }
 // );
+
+function updateFormats(url) {
+    if (!url) return;
+
+    // Show loading state in download button
+    const download_button = document.getElementById('download-button');
+    download_button.disabled = true;
+    download_button.style.cursor = 'not-allowed';
+    download_button.style.pointerEvents = 'none';
+    download_button.innerText = 'checking url';
+
+    fetch('/get_formats', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-Token': csrfToken
+        },
+        body: JSON.stringify({ url: url }),
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error('Failed to fetch formats');
+        }
+        return response.json();
+    })
+    .then(data => {
+        if (data.error) {
+            throw new Error(data.error);
+        }
+
+        // Check if we need to switch modes based on available formats
+        const downloadMode = document.getElementById('download-mode');
+        if (data.video_formats.length === 0 && downloadMode.value === 'auto') {
+            // Switch to audio mode if no video formats available
+            downloadMode.value = 'audio';
+            updateFormatSelectorsVisibility('audio');
+        } else if (data.audio_formats.length === 0 && downloadMode.value === 'audio') {
+            // Switch to video mode if no audio formats available
+            downloadMode.value = 'auto';
+            updateFormatSelectorsVisibility('auto');
+        }
+
+        // Update video format options
+        const videoFormatSelect = document.getElementById('video-format');
+        const currentVideoFormat = videoFormatSelect.value;
+        videoFormatSelect.innerHTML = '';
+        
+        data.video_formats.forEach(format => {
+            const option = document.createElement('option');
+            option.value = format;
+            option.textContent = format;
+            if (format === currentVideoFormat) {
+                option.selected = true;
+            }
+            videoFormatSelect.appendChild(option);
+        });
+
+        // Update audio format options
+        const audioFormatSelect = document.getElementById('audio-format');
+        const currentAudioFormat = audioFormatSelect.value;
+        audioFormatSelect.innerHTML = '';
+        
+        data.audio_formats.forEach(format => {
+            const option = document.createElement('option');
+            option.value = format;
+            option.textContent = format;
+            if (format === currentAudioFormat) {
+                option.selected = true;
+            }
+            audioFormatSelect.appendChild(option);
+        });
+    })
+    .catch(error => {
+        console.error('Error fetching formats:', error);
+        // Don't show error to user as this is a background operation
+    })
+    .finally(() => {
+        // Reset download button state
+        download_button.disabled = false;
+        download_button.style.cursor = 'pointer';
+        download_button.style.pointerEvents = 'auto';
+        download_button.innerText = 'download';
+    });
+}
+
+// Add event listener for URL input changes
+document.getElementById('url-input-box').addEventListener('input', function(e) {
+    const url = e.target.value.trim();
+    if (url) {
+        updateFormats(url);
+    }
+});
+
+function updateFormatSelectorsVisibility(downloadMode) {
+    const videoQuality = document.getElementById('video-quality');
+    const videoFormat = document.getElementById('video-format');
+    const audioFormat = document.getElementById('audio-format');
+    const videoQualityContainer = videoQuality.closest('.extra-input');
+    const videoFormatContainer = videoFormat.closest('.extra-input');
+    const audioFormatContainer = audioFormat.closest('.extra-input');
+
+    if (downloadMode === 'auto') {
+        // Show video options
+        videoQualityContainer.style.display = 'block';
+        videoFormatContainer.style.display = 'block';
+        audioFormatContainer.style.display = 'none';
+        
+        // Enable/disable video options
+        videoQuality.disabled = false;
+        videoQuality.style.filter = 'none';
+        videoFormat.disabled = false;
+        videoFormat.style.filter = 'none';
+        audioFormat.disabled = true;
+        audioFormat.style.filter = 'grayscale(1)';
+    } else {
+        // Show audio options
+        videoQualityContainer.style.display = 'none';
+        videoFormatContainer.style.display = 'none';
+        audioFormatContainer.style.display = 'block';
+        
+        // Enable/disable audio options
+        videoQuality.disabled = true;
+        videoQuality.style.filter = 'grayscale(1)';
+        videoFormat.disabled = true;
+        videoFormat.style.filter = 'grayscale(1)';
+        audioFormat.disabled = false;
+        audioFormat.style.filter = 'none';
+    }
+}
