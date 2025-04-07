@@ -37,6 +37,14 @@ document.addEventListener('DOMContentLoaded', function() {
     document.body.classList.add('loaded');
 });
 
+// Reapply theme when page is loaded from cache (back/forward navigation)
+window.addEventListener('pageshow', function(event) {
+    if (event.persisted) {
+        get_theme_cookie();
+        document.body.classList.add('loaded');
+    }
+});
+
 // window.addEventListener('pageshow', function(event) {
 //     if (event.persisted) {
 //         window.location.reload();
