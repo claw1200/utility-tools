@@ -244,7 +244,7 @@ document.addEventListener('DOMContentLoaded', () => {
             analyzeButton.disabled = true;
             analyzeButton.textContent = 'Analyzing...';
             
-            const fftSize = 4096;
+            const fftSize = 2048;
             const channelData = audioBuffer.getChannelData(0);
             
             const overlap = 0.5;
@@ -253,8 +253,8 @@ document.addEventListener('DOMContentLoaded', () => {
             const numChunks = Math.floor((channelData.length - chunkSize) / hopSize);
             
             const nyquistFreq = audioBuffer.sampleRate / 2;
-            const maxFreq = Math.min(nyquistFreq, 20000);
-            const displayMaxFreq = maxFreq * 1.15;
+            // Always display up to Nyquist frequency or at least 20kHz
+            const displayMaxFreq = Math.max(20000, nyquistFreq);
 
             const allFrequencyData = [];
 
@@ -287,7 +287,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     const x = canvas.spectrumX + Math.floor((column / numChunks) * canvas.spectrumWidth);
 
                     for (let i = 0; i < frequencyData.length; i++) {
-                        const frequency = i * (audioBuffer.sampleRate / 2) / (fftSize / 2);
+                        const frequency = (i * audioBuffer.sampleRate) / fftSize;
                         if (frequency > displayMaxFreq) break;
 
                         const y = canvas.spectrumY + Math.floor(canvas.spectrumHeight * (1 - frequency / displayMaxFreq));
@@ -330,6 +330,29 @@ document.addEventListener('DOMContentLoaded', () => {
             analyzeButton.disabled = false;
             analyzeButton.textContent = 'Analyze Audio';
         }
+    }
+
+    // Function to detect the maximum frequency with significant content
+    async function detectMaxFrequency(channelData, sampleRate) {
+        const fftSize = 2048;
+        const numSamples = Math.min(channelData.length, sampleRate * 2); // Analyze up to 2 seconds
+        const chunk = channelData.slice(0, numSamples);
+        
+        const frequencyData = await processAudioChunk(chunk, sampleRate, fftSize);
+        
+        // Find the highest frequency bin with content above noise floor
+        const noiseFloor = -96; // dB
+        const binSize = sampleRate / 2 / (fftSize / 2);
+        
+        for (let i = frequencyData.length - 1; i >= 0; i--) {
+            if (frequencyData[i] > noiseFloor) {
+                // Found the highest frequency with significant content
+                return (i + 1) * binSize;
+            }
+        }
+        
+        // Default to 15kHz if no clear cutoff is found
+        return 15000;
     }
 
     // Separate function for drawing scales
@@ -448,16 +471,24 @@ document.addEventListener('DOMContentLoaded', () => {
         ctx.textAlign = 'left';
     }
 
-    // Process a chunk of audio and return frequency data
+    // Update processAudioChunk to handle higher frequencies better
     async function processAudioChunk(chunk, sampleRate, fftSize) {
         return new Promise((resolve, reject) => {
             try {
                 // Create a temporary offline context for this chunk
                 const offlineCtx = new OfflineAudioContext(1, chunk.length, sampleRate);
                 const buffer = offlineCtx.createBuffer(1, chunk.length, sampleRate);
-                buffer.copyToChannel(chunk, 0);
 
-                // Create analyzer
+                // Apply Hann window to the chunk
+                const windowedChunk = new Float32Array(chunk.length);
+                for (let i = 0; i < chunk.length; i++) {
+                    const windowValue = 0.5 * (1 - Math.cos(2 * Math.PI * i / (chunk.length - 1)));
+                    windowedChunk[i] = chunk[i] * windowValue;
+                }
+                
+                buffer.copyToChannel(windowedChunk, 0);
+
+                // Create analyzer with adjusted settings
                 const analyzer = offlineCtx.createAnalyser();
                 analyzer.fftSize = fftSize;
                 analyzer.smoothingTimeConstant = 0;
