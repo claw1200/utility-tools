@@ -52,13 +52,16 @@ function getFormatId(download_mode, settings) {
 
     const videoCombinations = window.currentVideoCombinations || [];
     const audioCombinations = window.currentAudioCombinations || [];
+    const combinedFormatsOnly = document.getElementById('combined-formats').value === 'on';
     
     const selectedVideo = videoCombinations.find(combo => 
         combo.height === parseInt(settings.video_quality) && 
         combo.format === settings.video_format && 
         combo.vcodec === settings.video_codec &&
         // For mute mode, only select formats without audio
-        (download_mode === 'mute' ? (!combo.acodec || combo.acodec === 'none') : true)
+        (download_mode === 'mute' ? (!combo.acodec || combo.acodec === 'none') : true) &&
+        // For combined formats only, ensure format has both audio and video
+        (combinedFormatsOnly ? (combo.acodec && combo.acodec !== 'none') : true)
     );
     
     if (!selectedVideo) return null;
@@ -71,6 +74,11 @@ function getFormatId(download_mode, settings) {
     // For regular video mode, handle audio
     if (selectedVideo.acodec && selectedVideo.acodec !== 'none') {
         return selectedVideo.format_id;
+    }
+    
+    // If combined formats only is enabled, we don't need to look for separate audio
+    if (combinedFormatsOnly) {
+        return null;
     }
     
     const selectedAudio = audioCombinations.find(combo => 
@@ -98,6 +106,14 @@ function get_direct_mode() {
     }
 }
 
+function get_combined_formats() {
+    // set combined formats setting based on cookie
+    const combinedFormats = localStorage.getItem('combined_formats');
+    if (combinedFormats) {
+        document.getElementById('combined-formats').value = combinedFormats;
+    }
+}
+
 function theme_updated() {
     // called when theme is updated
     const theme = document.getElementById('theme-select').value;
@@ -111,14 +127,27 @@ function direct_mode_updated() {
     localStorage.setItem('direct_mode', directMode);
 }
 
+function combined_formats_updated() {
+    // called when combined formats setting is updated
+    const combinedFormats = document.getElementById('combined-formats').value;
+    localStorage.setItem('combined_formats', combinedFormats);
+    // Refresh formats if URL is already entered
+    const url = document.getElementById('url-input-box').value;
+    if (url) {
+        get_formats(url);
+    }
+}
+
 // Add event listeners
 document.getElementById('theme-select').addEventListener('change', theme_updated);
 document.getElementById('direct-mode').addEventListener('change', direct_mode_updated);
+document.getElementById('combined-formats').addEventListener('change', combined_formats_updated);
 
 // wait for the DOM to load before running the function
 document.addEventListener('DOMContentLoaded', function() {
     get_theme_cookie();
     get_direct_mode();
+    get_combined_formats();
     document.body.classList.add('loaded');
     
     // Set initial visibility based on default download mode
@@ -330,6 +359,27 @@ document.querySelector('.menu-icon').addEventListener('click', function() {
 document.getElementById('download-mode').addEventListener('change', function(e) {
     updateFormatSelectorsVisibility(e.target.value);
 });
+
+async function get_formats(url) {
+    try {
+        const response = await fetch(`/get_formats?url=${encodeURIComponent(url)}&combined_formats=${document.getElementById('combined-formats').value === 'on'}`);
+        const data = await response.json();
+        
+        if (data.error) {
+            error_display(data.error);
+            return;
+        }
+
+        window.currentVideoCombinations = data.video_combinations;
+        window.currentAudioCombinations = data.audio_combinations;
+        
+        // Update format selectors
+        updateFormatSelectors();
+    } catch (error) {
+        error_display('Error getting formats');
+        console.error(error);
+    }
+}
 
 function updateFormats(url) {
     if (!url) return;
@@ -550,9 +600,14 @@ function updateVideoOptions(combinations, selectedQuality) {
     // Store the current combinations for later use
     // Filter out formats with audio if in mute mode
     const downloadMode = document.getElementById('download-mode').value;
+    const combinedFormatsOnly = document.getElementById('combined-formats').value === 'on';
+    
     if (downloadMode === 'mute') {
         combinations = combinations.filter(combo => !combo.acodec || combo.acodec === 'none');
+    } else if (combinedFormatsOnly) {
+        combinations = combinations.filter(combo => combo.acodec && combo.acodec !== 'none');
     }
+    
     window.currentVideoCombinations = combinations;
     
     const videoFormatSelect = document.getElementById('video-format');
@@ -715,14 +770,15 @@ function updateFormatSelectorsVisibility(downloadMode) {
     const videoCodecContainer = videoCodec.closest('.extra-input');
     const audioFormatContainer = audioFormat.closest('.extra-input');
     const audioCodecContainer = audioCodec.closest('.extra-input');
+    const combinedFormatsOnly = document.getElementById('combined-formats').value === 'on';
 
     if (downloadMode === 'auto') {
         // Show both video and audio options
         videoQualityContainer.style.display = 'block';
         videoFormatContainer.style.display = 'block';
         videoCodecContainer.style.display = 'block';
-        audioFormatContainer.style.display = 'block';
-        audioCodecContainer.style.display = 'block';
+        audioFormatContainer.style.display = combinedFormatsOnly ? 'none' : 'block';
+        audioCodecContainer.style.display = combinedFormatsOnly ? 'none' : 'block';
         
         // Enable/disable options
         videoQuality.disabled = false;
@@ -731,10 +787,10 @@ function updateFormatSelectorsVisibility(downloadMode) {
         videoFormat.style.filter = 'none';
         videoCodec.disabled = false;
         videoCodec.style.filter = 'none';
-        audioFormat.disabled = false;
-        audioFormat.style.filter = 'none';
-        audioCodec.disabled = false;
-        audioCodec.style.filter = 'none';
+        audioFormat.disabled = combinedFormatsOnly;
+        audioFormat.style.filter = combinedFormatsOnly ? 'grayscale(1)' : 'none';
+        audioCodec.disabled = combinedFormatsOnly;
+        audioCodec.style.filter = combinedFormatsOnly ? 'grayscale(1)' : 'none';
     } else if (downloadMode === 'mute') {
         // Show only video options for mute mode
         videoQualityContainer.style.display = 'block';
