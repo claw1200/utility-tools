@@ -1,0 +1,456 @@
+:root {
+    --bg-light: #f0f0f0;
+    --widget-bg-light: #ffffff;
+    --text-light: #333333;
+    --text-secondary-light: #555555;
+    --border-light: #cccccc;
+    --button-light: #007bff;
+    --button-hover-light: #0056b3;
+    --wave-color-light: rgba(255, 255, 255, 0.3);
+    --widget-bg-dark: #1a1a1a;
+    --input-bg-dark: #2a2a2a;
+    --input-border-dark: #3a3a3a;
+}
+
+body {
+    font-family: Arial, sans-serif;
+    margin: 0;
+    padding: 0;
+    background-color: black;
+    color: var(--text-light);
+    transition: background-color 0.3s, color 0.3s;
+    min-height: 100vh;
+    position: relative;
+}
+
+body.loaded {
+    background-color: var(--bg-light);
+}
+
+.widget {
+    max-width: 800px;
+    margin: 3rem auto;
+    padding: 3rem;
+    border-radius: 12px;
+    box-shadow: 0 0 15px rgba(0,0,0,0.1);
+    background-color: var(--widget-bg-dark);
+    transition: background-color 0.3s;
+    position: relative;
+    z-index: 1;
+}
+
+body.loaded .widget {
+    background-color: var(--widget-bg-light);
+}
+
+.input-group {
+    margin-bottom: 1.5rem;
+}
+
+label {
+    display: block;
+    margin-bottom: 0.75rem;
+    font-size: 1.35rem;
+}
+
+input[type="file"] {
+    width: 95%;
+    padding: 0.75rem;
+    border: 1px solid var(--input-border-dark);
+    border-radius: 6px;
+    background-color: var(--input-bg-dark);
+    color: var(--text-light);
+    transition: border-color 0.3s, background-color 0.3s, color 0.3s;
+    font-size: 1.2rem;
+}
+
+body.loaded input[type="file"] {
+    border: 1px solid var(--border-light);
+    background-color: var(--widget-bg-light);
+}
+
+button {
+    width: 100%;
+    padding: 1.125rem;
+    background-color: var(--button-light);
+    color: white;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    margin-top: 1.5rem;
+    transition: background-color 0.3s, color 0.3s;
+    font-size: 1.35rem;
+}
+
+button:disabled {
+    filter: grayscale(0.5);
+    cursor: not-allowed;
+}
+
+button:hover:not(:disabled) {
+    background-color: var(--button-hover-light);
+}
+
+.spectrum-container {
+    width: 100%;
+    height: 400px;
+    margin: 1.5rem 0;
+    background-color: var(--input-bg-dark);
+    border-radius: 6px;
+    overflow: hidden;
+}
+
+body.loaded .spectrum-container {
+    background-color: var(--widget-bg-light);
+}
+
+#spectrumCanvas {
+    width: 100%;
+    height: 100%;
+}
+
+/* Menu and Settings Panel */
+.menu-icon {
+    position: fixed;
+    right: 30px;
+    top: 30px;
+    width: 45px;
+    height: 45px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    transition: transform 0.2s ease;
+    cursor: pointer;
+}
+
+.menu-icon img,
+.menu-icon svg {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+}
+
+.menu-icon:hover {
+    transform: rotate(0deg) scale(1.1);
+}
+
+.menu-icon.active {
+    transform: rotate(90deg);
+}
+
+.menu-icon.active:hover {
+    transform: rotate(90deg) scale(1.1);
+}
+
+.settings-panel {
+    position: fixed;
+    right: -360px;
+    top: 0;
+    width: 300px;
+    height: 100%;
+    background-color: #f5f5f5;
+    padding: 30px;
+    padding-top: 60px;
+    box-shadow: -3px 0 7.5px rgba(0,0,0,0.1);
+    transition: 0.3s;
+    z-index: 2;
+}
+
+.settings-panel h2 {
+    margin-bottom: 0rem;
+    font-size: 1.8rem;
+}
+
+.settings-panel.open {
+    right: 0;
+}
+
+.setting-item {
+    margin: 22.5px 0;
+    max-width: 225px;
+}
+
+.setting-item select {
+    width: 100%;
+    padding: 0.75rem;
+    border-radius: 6px;
+    border: 1px solid var(--border-light);
+    background-color: var(--widget-bg-light);
+    color: var(--text-light);
+    outline-style: none;
+    transition: border-color 0.3s, background-color 0.3s, color 0.3s;
+    font-size: 1.2rem;
+}
+
+.setting-item input {
+    max-width: 89%;
+}
+
+.wave-container {
+    position: fixed;
+    width: 100%;
+    height: 100%;
+    top: 0;
+    left: 0;
+    overflow: hidden;
+    z-index: -1;
+  }
+  
+  .wave {
+    position: absolute;
+    width: 200%;
+    height: 200%;
+    background: linear-gradient(
+      45deg,
+      var(--wave-color-light) 0%,
+      var(--wave-color-dark) 100%
+    );
+    opacity: 0.5;
+    border-radius: 40%;
+    animation: wave 120s infinite linear;
+    transform-origin: 50% 48%;
+    bottom: -100%;
+  }
+  
+  .wave2 {
+    animation: wave 240s infinite linear;
+    opacity: 0.3;
+  }
+  
+  .wave3 {
+    animation: wave 200s infinite linear;
+    opacity: 0.2;
+  }
+  
+  .wave4 {
+    animation: wave 100s infinite linear;
+    opacity: 0.1;
+  }
+  
+  @keyframes wave {
+    from {
+      transform: rotate(0deg);
+    }
+    to {
+      transform: rotate(360deg);
+    }
+  }
+  
+  @media (prefers-color-scheme: dark) {
+    .wave {
+      background: linear-gradient(
+        45deg,
+        var(--wave-color-dark) 0%,
+        var(--wave-color-light) 100%
+      );
+    }
+  }
+  
+  
+
+/* Footer */
+.footer {
+    text-align: center;
+    margin-top: 3rem;
+    z-index: 1;
+    position: relative;
+}
+
+.footer p {
+    font-size: 1.35rem;
+    margin: 0.75rem 0;
+}
+
+.footer a {
+    color: #666;
+    text-decoration: none;
+    transition: color 0.2s ease;
+    font-size: 1.35rem;
+}
+
+.footer a:hover {
+    color: var(--button-hover-light);
+}
+
+@media (max-width: 500px) {
+    .widget {
+        margin: 1.5rem;
+        padding: 1.5rem;
+    }
+    
+    .spectrum-container {
+        height: 300px;
+    }
+
+    .menu-icon {
+        right: 15px;
+        top: 15px;
+        width: 35px;
+        height: 35px;
+    }
+
+    .settings-panel {
+        width: 250px;
+        padding: 20px;
+        padding-top: 50px;
+    }
+
+    .settings-panel h2 {
+        font-size: 1.5rem;
+    }
+
+    .setting-item {
+        margin: 15px 0;
+    }
+
+    .footer p, .footer a {
+        font-size: 1.2rem;
+    }
+}
+
+/* Drag and drop styles */
+body.dragover::after {
+    content: 'Drop audio file here';
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.8);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 24px;
+    color: white;
+    z-index: 1000;
+    pointer-events: none;
+}
+
+/* Theme-specific styles */
+body.dark-theme {
+    background-color: var(--bg-dark);
+    color: var(--text-dark);
+}
+
+body.dark-theme .widget {
+    background-color: var(--widget-bg-dark);
+}
+
+body.dark-theme .spectrum-container {
+    background-color: var(--input-bg-dark);
+}
+
+body.dark-theme .settings-panel {
+    background-color: var(--widget-bg-dark);
+    color: var(--text-dark);
+}
+
+body.dark-theme .setting-item select {
+    background-color: var(--widget-bg-dark);
+    border-color: var(--border-dark);
+    color: var(--text-dark);
+}
+
+body.dark-theme input[type="file"] {
+    background-color: var(--input-bg-dark);
+    border-color: var(--input-border-dark);
+    color: var(--text-dark);
+}
+
+body.dark-theme .menu-icon {
+    filter: invert(1);
+}
+
+/* Green theme */
+body.green-theme {
+    background-color: var(--bg-green);
+    color: var(--text-green);
+}
+
+body.green-theme .widget {
+    background-color: var(--widget-bg-green);
+}
+
+body.green-theme .spectrum-container {
+    background-color: var(--input-bg-dark);
+}
+
+body.green-theme .settings-panel {
+    background-color: var(--widget-bg-green);
+    color: var(--text-green);
+}
+
+body.green-theme .setting-item select {
+    background-color: var(--widget-bg-green);
+    border-color: var(--border-green);
+    color: var(--text-green);
+}
+
+body.green-theme input[type="file"] {
+    background-color: var(--input-bg-dark);
+    border-color: var(--border-green);
+    color: var(--text-green);
+}
+
+/* Orange theme */
+body.orange-theme {
+    background-color: var(--bg-orange);
+    color: var(--text-orange);
+}
+
+body.orange-theme .widget {
+    background-color: var(--widget-bg-orange);
+}
+
+body.orange-theme .spectrum-container {
+    background-color: var(--input-bg-dark);
+}
+
+body.orange-theme .settings-panel {
+    background-color: var(--widget-bg-orange);
+    color: var(--text-orange);
+}
+
+body.orange-theme .setting-item select {
+    background-color: var(--widget-bg-orange);
+    border-color: var(--border-orange);
+    color: var(--text-orange);
+}
+
+body.orange-theme input[type="file"] {
+    background-color: var(--input-bg-dark);
+    border-color: var(--border-orange);
+    color: var(--text-orange);
+}
+
+/* Purple theme */
+body.purple-theme {
+    background-color: var(--bg-purple);
+    color: var(--text-purple);
+}
+
+body.purple-theme .widget {
+    background-color: var(--widget-bg-purple);
+}
+
+body.purple-theme .spectrum-container {
+    background-color: var(--input-bg-dark);
+}
+
+body.purple-theme .settings-panel {
+    background-color: var(--widget-bg-purple);
+    color: var(--text-purple);
+}
+
+body.purple-theme .setting-item select {
+    background-color: var(--widget-bg-purple);
+    border-color: var(--border-purple);
+    color: var(--text-purple);
+}
+
+body.purple-theme input[type="file"] {
+    background-color: var(--input-bg-dark);
+    border-color: var(--border-purple);
+    color: var(--text-purple);
+}
