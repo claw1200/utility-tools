@@ -90,7 +90,6 @@ async def download_media_ytdlp(url, download_mode, format_id=None):
             download_setting_string = format_id
 
 
-    print(f"\nAttempting download with format string: {download_setting_string}")
 
     ytdl_options = {
         "format": download_setting_string,
@@ -123,7 +122,6 @@ async def download_media_ytdlp(url, download_mode, format_id=None):
         )
 
     except yt_dlp.DownloadError as e:
-        print(f"\nDownload error: {str(e)}")
         return jsonify({
             "error": str(e)
         }), download_id
@@ -215,8 +213,6 @@ def download_node():
             elif f.get('format_id') == format_id:
                 requested_format = f
                 break
-            else:
-                print(f"Format ID does not match: {f.get('format_id')} != {format_id}")
 
 
         if not requested_format:
@@ -261,7 +257,6 @@ def download_node():
         )
         # url encode filename
         filename = quote(filename)
-        print(filename)
         response.headers.set('Content-Disposition', f'attachment; filename={filename}')
         response.headers.set('Content-Length', str(os.path.getsize(file_location)))
         response.headers.set('Cache-Control', 'no-cache')
@@ -451,26 +446,26 @@ def get_formats():
             if f.get('vcodec') and f.get('vcodec') != 'none':
                 height = f.get('height', 0)
                 if height:
-                    # Keep the full codec name and add format_id
-                    vcodec = f.get('vcodec', '')
                     video_combinations.append({
                         'format': f.get('ext', ''),
-                        'codec': vcodec,
+                        'vcodec': f.get('vcodec', ''),  # Changed from 'codec' to 'vcodec'
                         'height': height,
                         'format_id': f.get('format_id'),
-                        'filesize': f.get('filesize', 0)
+                        'filesize': f.get('filesize', 0),
+                        'acodec': f.get('acodec', 'none')
                     })
 
             # Handle audio formats
             if f.get('acodec') and f.get('acodec') != 'none':
-                # Keep the full codec name and add format_id
-                acodec = f.get('acodec', '')
-                audio_combinations.append({
-                    'format': f.get('ext', ''),
-                    'codec': acodec,
-                    'format_id': f.get('format_id'),
-                    'filesize': f.get('filesize', 0)
-                })
+                # Only add to audio combinations if it's an audio-only format (no video)
+                if f.get('vcodec') == 'none':
+                    audio_combinations.append({
+                        'format': f.get('ext', ''),
+                        'acodec': f.get('acodec', ''),
+                        'vcodec': f.get('vcodec', 'none'),
+                        'format_id': f.get('format_id'),
+                        'filesize': f.get('filesize', 0)
+                    })
 
         # Remove duplicates and sort
         video_combinations = [dict(t) for t in {tuple(d.items()) for d in video_combinations}]

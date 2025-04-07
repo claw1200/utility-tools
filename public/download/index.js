@@ -45,7 +45,7 @@ function getFormatId(download_mode, settings) {
         const audioCombinations = window.currentAudioCombinations || [];
         const selectedAudio = audioCombinations.find(combo => 
             combo.format === settings.audio_format && 
-            combo.codec === settings.audio_codec
+            combo.acodec === settings.audio_codec
         );
         return selectedAudio?.format_id;
     }
@@ -56,15 +56,28 @@ function getFormatId(download_mode, settings) {
     const selectedVideo = videoCombinations.find(combo => 
         combo.height === parseInt(settings.video_quality) && 
         combo.format === settings.video_format && 
-        combo.codec === settings.video_codec
+        combo.vcodec === settings.video_codec &&
+        // For mute mode, only select formats without audio
+        (download_mode === 'mute' ? (!combo.acodec || combo.acodec === 'none') : true)
     );
+    
+    if (!selectedVideo) return null;
+    
+    // For mute mode, return just the video format
+    if (download_mode === 'mute') {
+        return selectedVideo.format_id;
+    }
+    
+    // For regular video mode, handle audio
+    if (selectedVideo.acodec && selectedVideo.acodec !== 'none') {
+        return selectedVideo.format_id;
+    }
     
     const selectedAudio = audioCombinations.find(combo => 
         combo.format === settings.audio_format && 
-        combo.codec === settings.audio_codec
+        combo.acodec === settings.audio_codec
     );
-
-    if (!selectedVideo) return null;
+    
     return selectedAudio ? `${selectedVideo.format_id}+${selectedAudio.format_id}` : selectedVideo.format_id;
 }
 
@@ -92,7 +105,7 @@ function download() {
 
     const format_id = getFormatId(settings.download_mode, settings);
     if (!format_id) {
-        error_display('Could not find matching format. Please try again.');
+        error_display('Invalid format selected. Please try another.');
         return;
     }
 
@@ -383,10 +396,10 @@ function updateFormats(url) {
                 updateDownloadButton('enabled', 'download', firstAudioCombo.filesize);
             }
         } else if (data.video_combinations.length > 0) {
-            const firstVideoCombo = data.video_combinations[0];
-            if (firstVideoCombo.filesize) {
-                updateDownloadButton('enabled', 'download', firstVideoCombo.filesize);
-            }
+            // Instead of using just the video size, calculate total size properly
+            window.currentVideoCombinations = data.video_combinations;
+            window.currentAudioCombinations = data.audio_combinations;
+            updateDownloadButtonWithSize();
         }
     })
     .catch(error => {
@@ -428,30 +441,40 @@ function getTotalFileSize() {
         
         const selectedAudio = window.currentAudioCombinations?.find(combo => 
             combo.format === audioFormat && 
-            combo.codec === audioCodec
+            combo.acodec === audioCodec
         );
         
         return selectedAudio?.filesize || 0;
     } else {
-        // For video mode, add up video and audio sizes
+        // For video modes (auto or mute)
         const videoQuality = parseInt(document.getElementById('video-quality').value);
         const videoFormat = document.getElementById('video-format').value;
         const videoCodec = document.getElementById('video-codec').value;
-        const audioFormat = document.getElementById('audio-format').value;
-        const audioCodec = document.getElementById('audio-codec').value;
         
         const selectedVideo = window.currentVideoCombinations?.find(combo => 
             combo.height === videoQuality && 
             combo.format === videoFormat && 
-            combo.codec === videoCodec
+            combo.vcodec === videoCodec &&
+            // For mute mode, only select formats without audio
+            (downloadMode === 'mute' ? (!combo.acodec || combo.acodec === 'none') : true)
         );
         
+        if (!selectedVideo) return 0;
+        
+        // For mute mode or if video includes audio, just return video size
+        if (downloadMode === 'mute' || (selectedVideo.acodec && selectedVideo.acodec !== 'none')) {
+            return selectedVideo.filesize || 0;
+        }
+        
+        // For regular video mode without audio, add audio size
+        const audioFormat = document.getElementById('audio-format').value;
+        const audioCodec = document.getElementById('audio-codec').value;
         const selectedAudio = window.currentAudioCombinations?.find(combo => 
             combo.format === audioFormat && 
-            combo.codec === audioCodec
+            combo.acodec === audioCodec
         );
         
-        const videoSize = selectedVideo?.filesize || 0;
+        const videoSize = selectedVideo.filesize || 0;
         const audioSize = selectedAudio?.filesize || 0;
         
         return videoSize + audioSize;
@@ -469,6 +492,11 @@ function updateDownloadButtonWithSize() {
 
 function updateVideoOptions(combinations, selectedQuality) {
     // Store the current combinations for later use
+    // Filter out formats with audio if in mute mode
+    const downloadMode = document.getElementById('download-mode').value;
+    if (downloadMode === 'mute') {
+        combinations = combinations.filter(combo => !combo.acodec || combo.acodec === 'none');
+    }
     window.currentVideoCombinations = combinations;
     
     const videoFormatSelect = document.getElementById('video-format');
@@ -529,7 +557,7 @@ function updateVideoOptions(combinations, selectedQuality) {
         );
         
         // Get unique codecs for this resolution and format
-        const validCodecs = new Set(validCombinations.map(combo => combo.codec));
+        const validCodecs = new Set(validCombinations.map(combo => combo.vcodec));
         
         videoCodecSelect.innerHTML = '';
         validCodecs.forEach(codec => {
@@ -587,7 +615,7 @@ function updateAudioOptions(combinations) {
         const validCombinations = combinations.filter(combo => combo.format === selectedFormat);
         
         // Get unique codecs for this format
-        const validCodecs = new Set(validCombinations.map(combo => combo.codec));
+        const validCodecs = new Set(validCombinations.map(combo => combo.acodec));
         
         audioCodecSelect.innerHTML = '';
         validCodecs.forEach(codec => {
@@ -651,9 +679,25 @@ function updateFormatSelectorsVisibility(downloadMode) {
         audioFormat.style.filter = 'none';
         audioCodec.disabled = false;
         audioCodec.style.filter = 'none';
-
-        // Update total file size
-        updateDownloadButtonWithSize();
+    } else if (downloadMode === 'mute') {
+        // Show only video options for mute mode
+        videoQualityContainer.style.display = 'block';
+        videoFormatContainer.style.display = 'block';
+        videoCodecContainer.style.display = 'block';
+        audioFormatContainer.style.display = 'none';
+        audioCodecContainer.style.display = 'none';
+        
+        // Enable video options, disable audio options
+        videoQuality.disabled = false;
+        videoQuality.style.filter = 'none';
+        videoFormat.disabled = false;
+        videoFormat.style.filter = 'none';
+        videoCodec.disabled = false;
+        videoCodec.style.filter = 'none';
+        audioFormat.disabled = true;
+        audioFormat.style.filter = 'grayscale(1)';
+        audioCodec.disabled = true;
+        audioCodec.style.filter = 'grayscale(1)';
     } else {
         // Show only audio options
         videoQualityContainer.style.display = 'none';
@@ -673,8 +717,14 @@ function updateFormatSelectorsVisibility(downloadMode) {
         audioFormat.style.filter = 'none';
         audioCodec.disabled = false;
         audioCodec.style.filter = 'none';
-
-        // Update total file size
-        updateDownloadButtonWithSize();
     }
+
+    // Update video options with current combinations if we have them
+    if (window.currentVideoCombinations && (downloadMode === 'auto' || downloadMode === 'mute')) {
+        const currentQuality = videoQuality.value;
+        updateVideoOptions(window.currentVideoCombinations, currentQuality);
+    }
+
+    // Update total file size
+    updateDownloadButtonWithSize();
 }
