@@ -351,29 +351,41 @@ function updateFormats(url) {
             downloadModeSelect.value = 'audio';
             updateFormatSelectorsVisibility('audio');
             
-            // Hide video option from download mode list
+            // Hide video and mute options from download mode list
             const videoOption = downloadModeSelect.querySelector('option[value="auto"]');
+            const muteOption = downloadModeSelect.querySelector('option[value="mute"]');
             if (videoOption) {
                 videoOption.style.display = 'none';
+            }
+            if (muteOption) {
+                muteOption.style.display = 'none';
             }
         } else if (data.audio_combinations.length === 0 && data.video_combinations.length > 0) {
             // Switch to video mode if no audio formats available but video exists
             downloadModeSelect.value = 'auto';
             updateFormatSelectorsVisibility('auto');
             
-            // Show video option if it was hidden
+            // Show video and mute options if they were hidden
             const videoOption = downloadModeSelect.querySelector('option[value="auto"]');
+            const muteOption = downloadModeSelect.querySelector('option[value="mute"]');
             if (videoOption) {
                 videoOption.style.display = '';
+            }
+            if (muteOption) {
+                muteOption.style.display = '';
             }
         } else if (data.video_combinations.length === 0 && data.audio_combinations.length === 0) {
             // No formats available at all
             throw new Error('No formats available for this URL');
         } else {
-            // Both formats available, ensure video option is visible
+            // Both formats available, ensure video and mute options are visible
             const videoOption = downloadModeSelect.querySelector('option[value="auto"]');
+            const muteOption = downloadModeSelect.querySelector('option[value="mute"]');
             if (videoOption) {
                 videoOption.style.display = '';
+            }
+            if (muteOption) {
+                muteOption.style.display = '';
             }
         }
 
