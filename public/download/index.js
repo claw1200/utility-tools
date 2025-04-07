@@ -118,7 +118,7 @@ function theme_updated() {
     // called when theme is updated
     const theme = document.getElementById('theme-select').value;
     localStorage.setItem('theme', theme);
-    document.body.classList.add('loaded');
+    document.body.className = theme + '-theme';
 }
 
 function direct_mode_updated() {
@@ -172,7 +172,6 @@ document.addEventListener('DOMContentLoaded', function() {
     get_theme_cookie();
     get_direct_mode();
     get_combined_formats();
-    document.body.classList.add('loaded');
     
     // Set initial visibility based on default download mode
     const defaultDownloadMode = document.getElementById('download-mode').value;

@@ -21,8 +21,12 @@ body {
     transition: background-color 0.3s, color 0.3s;
 }
 
-body.loaded {
+body.light-theme {
     background-color: var(--bg-light);
+}
+
+body.dark-theme {
+    background-color: var(--widget-bg-dark);
 }
 
 /* Base styles */
@@ -36,7 +40,7 @@ body.loaded {
     transition: background-color 0.3s;
 }
 
-body.loaded .widget {
+body.light-theme .widget {
     background-color: var(--widget-bg-light);
 }
 
@@ -79,7 +83,7 @@ body.loaded .widget {
     font-size: 1.2rem;
 }
 
-body.loaded .extra-input select {
+body.light-theme .extra-input select {
     border: 1px solid var(--border-light);
     background-color: var(--widget-bg-light);
 }
@@ -101,7 +105,7 @@ input {
     font-size: 1.2rem;
 }
 
-body.loaded input {
+body.light-theme input {
     border: 1px solid var(--border-light);
     background-color: var(--widget-bg-light);
 }
@@ -166,12 +170,16 @@ button:hover {
     top: 0;
     width: 300px;
     height: 100%;
-    background-color: #f5f5f5;
+    background-color: var(--widget-bg-dark);
     padding: 30px;
     padding-top: 60px;
     box-shadow: -3px 0 7.5px rgba(0,0,0,0.1);
     transition: 0.3s;
     z-index: 2;
+}
+
+body.light-theme .settings-panel {
+    background-color: var(--widget-bg-light);
 }
 
 .settings-panel h2 {
@@ -192,12 +200,17 @@ button:hover {
     width: 100%;
     padding: 0.75rem;
     border-radius: 6px;
-    border: 1px solid var(--border-light);
-    background-color: var(--widget-bg-light);
+    border: 1px solid var(--input-border-dark);
+    background-color: var(--input-bg-dark);
     color: var(--text-light);
     outline-style: none;
     transition: border-color 0.3s, background-color 0.3s, color 0.3s;
     font-size: 1.2rem;
+}
+
+body.light-theme .setting-item select {
+    border: 1px solid var(--border-light);
+    background-color: var(--widget-bg-light);
 }
 
 .setting-item input {
