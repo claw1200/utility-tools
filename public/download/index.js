@@ -427,6 +427,9 @@ function updateFormats(url) {
     download_button.style.pointerEvents = 'none';
     download_button.innerText = 'checking url';
 
+    // Reset original combinations
+    window.originalVideoCombinations = null;
+
     fetch('/get_formats', {
         method: 'POST',
         headers: {
@@ -620,18 +623,24 @@ function updateDownloadButtonWithSize() {
 }
 
 function updateVideoOptions(combinations, selectedQuality) {
-    // Store the current combinations for later use
+    // Store the original combinations if not already stored
+    if (!window.originalVideoCombinations) {
+        window.originalVideoCombinations = [...combinations];
+    }
+    
     // Filter out formats with audio if in mute mode
     const downloadMode = document.getElementById('download-mode').value;
     const combinedFormatsOnly = document.getElementById('combined-formats').value === 'on';
     
+    let filteredCombinations = [...window.originalVideoCombinations];
+    
     if (downloadMode === 'mute') {
-        combinations = combinations.filter(combo => !combo.acodec || combo.acodec === 'none');
+        filteredCombinations = filteredCombinations.filter(combo => !combo.acodec || combo.acodec === 'none');
     } else if (combinedFormatsOnly) {
-        combinations = combinations.filter(combo => combo.acodec && combo.acodec !== 'none');
+        filteredCombinations = filteredCombinations.filter(combo => combo.acodec && combo.acodec !== 'none');
     }
     
-    window.currentVideoCombinations = combinations;
+    window.currentVideoCombinations = filteredCombinations;
     
     const videoFormatSelect = document.getElementById('video-format');
     const videoCodecSelect = document.getElementById('video-codec');
@@ -640,7 +649,7 @@ function updateVideoOptions(combinations, selectedQuality) {
     const currentCodec = videoCodecSelect.value;
 
     // Get unique resolutions from combinations
-    const resolutions = new Set(combinations.map(combo => combo.height));
+    const resolutions = new Set(filteredCombinations.map(combo => combo.height));
     
     // Update resolution options
     videoQualitySelect.innerHTML = '';
@@ -659,7 +668,7 @@ function updateVideoOptions(combinations, selectedQuality) {
         const selectedResolution = parseInt(videoQualitySelect.value);
         
         // Filter combinations for selected resolution
-        const validCombinations = combinations.filter(combo => combo.height === selectedResolution);
+        const validCombinations = filteredCombinations.filter(combo => combo.height === selectedResolution);
         
         // Get unique formats for this resolution
         const validFormats = new Set(validCombinations.map(combo => combo.format));
@@ -685,7 +694,7 @@ function updateVideoOptions(combinations, selectedQuality) {
         const selectedFormat = videoFormatSelect.value;
         
         // Filter combinations for selected resolution and format
-        const validCombinations = combinations.filter(combo => 
+        const validCombinations = filteredCombinations.filter(combo => 
             combo.height === selectedResolution && 
             combo.format === selectedFormat
         );
