@@ -1,4 +1,3 @@
-
 function toggleMenu() {
     const settingsPanel = document.querySelector('.settings-panel');
     settingsPanel.classList.toggle('open');
@@ -26,7 +25,7 @@ function theme_updated() {
     // called when theme is updated
     const theme = document.getElementById('theme-select').value;
     localStorage.setItem('theme', theme);
-    document.body.classList.add('loaded');    
+    document.body.classList.add('loaded');
 }
 
 // Add event listeners
