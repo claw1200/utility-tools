@@ -131,10 +131,34 @@ function combined_formats_updated() {
     // called when combined formats setting is updated
     const combinedFormats = document.getElementById('combined-formats').value;
     localStorage.setItem('combined_formats', combinedFormats);
+    
+    // If combined formats is enabled, force video mode
+    if (combinedFormats === 'on') {
+        document.getElementById('download-mode').value = 'auto';
+        // Hide audio and mute options
+        const audioOption = document.getElementById('download-mode').querySelector('option[value="audio"]');
+        const muteOption = document.getElementById('download-mode').querySelector('option[value="mute"]');
+        if (audioOption) audioOption.style.display = 'none';
+        if (muteOption) muteOption.style.display = 'none';
+    } else {
+        // Show all options when combined formats is disabled
+        const audioOption = document.getElementById('download-mode').querySelector('option[value="audio"]');
+        const muteOption = document.getElementById('download-mode').querySelector('option[value="mute"]');
+        if (audioOption) audioOption.style.display = '';
+        if (muteOption) muteOption.style.display = '';
+    }
+    
+    // Update format selectors visibility
+    updateFormatSelectorsVisibility(document.getElementById('download-mode').value);
+    
     // Refresh formats if URL is already entered
     const url = document.getElementById('url-input-box').value;
     if (url) {
-        get_formats(url);
+        // Filter the existing formats instead of making a new API call
+        const downloadMode = document.getElementById('download-mode').value;
+        if (window.currentVideoCombinations) {
+            updateVideoOptions(window.currentVideoCombinations, document.getElementById('video-quality').value);
+        }
     }
 }
 
@@ -362,7 +386,7 @@ document.getElementById('download-mode').addEventListener('change', function(e) 
 
 async function get_formats(url) {
     try {
-        const response = await fetch(`/get_formats?url=${encodeURIComponent(url)}&combined_formats=${document.getElementById('combined-formats').value === 'on'}`);
+        const response = await fetch(`/get_formats?url=${encodeURIComponent(url)}`);
         const data = await response.json();
         
         if (data.error) {
@@ -773,20 +797,24 @@ function updateFormatSelectorsVisibility(downloadMode) {
     const combinedFormatsOnly = document.getElementById('combined-formats').value === 'on';
 
     if (downloadMode === 'auto') {
-        // Show both video and audio options
+        // Show video options
         videoQualityContainer.style.display = 'block';
         videoFormatContainer.style.display = 'block';
         videoCodecContainer.style.display = 'block';
+        
+        // Show/hide audio options based on combined formats setting
         audioFormatContainer.style.display = combinedFormatsOnly ? 'none' : 'block';
         audioCodecContainer.style.display = combinedFormatsOnly ? 'none' : 'block';
         
-        // Enable/disable options
+        // Enable video options
         videoQuality.disabled = false;
         videoQuality.style.filter = 'none';
         videoFormat.disabled = false;
         videoFormat.style.filter = 'none';
         videoCodec.disabled = false;
         videoCodec.style.filter = 'none';
+        
+        // Enable/disable audio options based on combined formats setting
         audioFormat.disabled = combinedFormatsOnly;
         audioFormat.style.filter = combinedFormatsOnly ? 'grayscale(1)' : 'none';
         audioCodec.disabled = combinedFormatsOnly;
