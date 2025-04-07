@@ -405,8 +405,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Get color for decibel value
     function getColorForDecibel(db) {
-        // Normalize dB value between -120 and 0
-        const normalizedValue = (db + 120) / 120;
+        // Normalize dB value between -120 and 0, but with a more aggressive curve
+        // This will make quiet signals (especially noise) less visible
+        const normalizedValue = Math.pow((db + 120) / 120, 1.5); // Added exponential curve
+        
+        // Anything below -96dB should be black
+        if (db < -96) {
+            return 'rgb(0,0,0)';
+        }
         
         // Create color stops similar to Spek
         if (normalizedValue < 0.2) {
@@ -493,8 +499,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 analyzer.fftSize = fftSize;
                 analyzer.smoothingTimeConstant = 0;
                 analyzer.minDecibels = -120;
-                analyzer.maxDecibels = 0;
-
+                analyzer.maxDecibels = -20; // Adjusted from 0 to -20 to better match Spek's sensitivity
+                
                 // Create source and connect
                 const source = offlineCtx.createBufferSource();
                 source.buffer = buffer;
@@ -515,9 +521,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
     }
-});
-
-// Menu toggle functionality
+});// Menu toggle functionality
 function toggleMenu() {
     const menuIcon = document.querySelector('.menu-icon');
     const settingsPanel = document.querySelector('.settings-panel');
@@ -525,3 +529,5 @@ function toggleMenu() {
     menuIcon.classList.toggle('active');
     settingsPanel.classList.toggle('open');
 }
+
+
