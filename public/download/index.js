@@ -12,12 +12,25 @@ async function fetchCSRFToken() {
 }
 
 // Helper functions
-function updateDownloadButton(state, text = null) {
+function formatFileSize(bytes) {
+    if (bytes === 0) return '0 B';
+    const k = 1024;
+    const sizes = ['B', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+}
+
+function updateDownloadButton(state, text = null, fileSize = null) {
     const download_button = document.getElementById('download-button');
     download_button.disabled = state === 'disabled';
     download_button.style.cursor = state === 'disabled' ? 'not-allowed' : 'pointer';
     download_button.style.pointerEvents = state === 'disabled' ? 'none' : 'auto';
-    download_button.innerText = text || (state === 'disabled' ? 'download starting' : 'download');
+    
+    if (fileSize) {
+        download_button.innerText = `${text || 'download'} (${formatFileSize(fileSize)})`;
+    } else {
+        download_button.innerText = text || (state === 'disabled' ? 'download starting' : 'download');
+    }
 }
 
 function updateProgressBar(progress_percentage) {
@@ -294,7 +307,9 @@ function updateFormats(url) {
     })
     .then(response => {
         if (!response.ok) {
-            throw new Error('Failed to fetch formats');
+            return response.json().then(data => {
+                throw new Error(data.error || 'Failed to fetch formats');
+            });
         }
         return response.json();
     })
@@ -317,24 +332,24 @@ function updateFormats(url) {
         audioCodecSelect.innerHTML = '';
 
         // Check if we need to switch modes based on available formats
-        const downloadMode = document.getElementById('download-mode');
+        const downloadModeSelect = document.getElementById('download-mode');
         if (data.video_combinations.length === 0 && data.audio_combinations.length > 0) {
             // Switch to audio mode if no video formats available but audio exists
-            downloadMode.value = 'audio';
+            downloadModeSelect.value = 'audio';
             updateFormatSelectorsVisibility('audio');
             
             // Hide video option from download mode list
-            const videoOption = downloadMode.querySelector('option[value="auto"]');
+            const videoOption = downloadModeSelect.querySelector('option[value="auto"]');
             if (videoOption) {
                 videoOption.style.display = 'none';
             }
         } else if (data.audio_combinations.length === 0 && data.video_combinations.length > 0) {
             // Switch to video mode if no audio formats available but video exists
-            downloadMode.value = 'auto';
+            downloadModeSelect.value = 'auto';
             updateFormatSelectorsVisibility('auto');
             
             // Show video option if it was hidden
-            const videoOption = downloadMode.querySelector('option[value="auto"]');
+            const videoOption = downloadModeSelect.querySelector('option[value="auto"]');
             if (videoOption) {
                 videoOption.style.display = '';
             }
@@ -343,7 +358,7 @@ function updateFormats(url) {
             throw new Error('No formats available for this URL');
         } else {
             // Both formats available, ensure video option is visible
-            const videoOption = downloadMode.querySelector('option[value="auto"]');
+            const videoOption = downloadModeSelect.querySelector('option[value="auto"]');
             if (videoOption) {
                 videoOption.style.display = '';
             }
@@ -359,10 +374,24 @@ function updateFormats(url) {
         if (data.audio_combinations.length > 0) {
             updateAudioOptions(data.audio_combinations);
         }
+
+        // Update download button with initial file size
+        const currentMode = downloadModeSelect.value;
+        if (currentMode === 'audio' && data.audio_combinations.length > 0) {
+            const firstAudioCombo = data.audio_combinations[0];
+            if (firstAudioCombo.filesize) {
+                updateDownloadButton('enabled', 'download', firstAudioCombo.filesize);
+            }
+        } else if (data.video_combinations.length > 0) {
+            const firstVideoCombo = data.video_combinations[0];
+            if (firstVideoCombo.filesize) {
+                updateDownloadButton('enabled', 'download', firstVideoCombo.filesize);
+            }
+        }
     })
     .catch(error => {
         console.error('Error fetching formats:', error);
-        error_display('failed to fetch formats for this link. try a different one?');
+        error_display(error.message);
         
         // Reset all selectors on error
         const videoQualitySelect = document.getElementById('video-quality');
@@ -378,12 +407,64 @@ function updateFormats(url) {
         audioCodecSelect.innerHTML = '';
     })
     .finally(() => {
-        // Reset download button state
-        download_button.disabled = false;
-        download_button.style.cursor = 'pointer';
-        download_button.style.pointerEvents = 'auto';
-        download_button.innerText = 'download';
+        // Reset download button state if no file size was set
+        const download_button = document.getElementById('download-button');
+        if (download_button.innerText === 'checking url') {
+            download_button.disabled = false;
+            download_button.style.cursor = 'pointer';
+            download_button.style.pointerEvents = 'auto';
+            download_button.innerText = 'download';
+        }
     });
+}
+
+function getTotalFileSize() {
+    const downloadMode = document.getElementById('download-mode').value;
+    
+    if (downloadMode === 'audio') {
+        // For audio mode, just return the audio size
+        const audioFormat = document.getElementById('audio-format').value;
+        const audioCodec = document.getElementById('audio-codec').value;
+        
+        const selectedAudio = window.currentAudioCombinations?.find(combo => 
+            combo.format === audioFormat && 
+            combo.codec === audioCodec
+        );
+        
+        return selectedAudio?.filesize || 0;
+    } else {
+        // For video mode, add up video and audio sizes
+        const videoQuality = parseInt(document.getElementById('video-quality').value);
+        const videoFormat = document.getElementById('video-format').value;
+        const videoCodec = document.getElementById('video-codec').value;
+        const audioFormat = document.getElementById('audio-format').value;
+        const audioCodec = document.getElementById('audio-codec').value;
+        
+        const selectedVideo = window.currentVideoCombinations?.find(combo => 
+            combo.height === videoQuality && 
+            combo.format === videoFormat && 
+            combo.codec === videoCodec
+        );
+        
+        const selectedAudio = window.currentAudioCombinations?.find(combo => 
+            combo.format === audioFormat && 
+            combo.codec === audioCodec
+        );
+        
+        const videoSize = selectedVideo?.filesize || 0;
+        const audioSize = selectedAudio?.filesize || 0;
+        
+        return videoSize + audioSize;
+    }
+}
+
+function updateDownloadButtonWithSize() {
+    const totalSize = getTotalFileSize();
+    if (totalSize > 0) {
+        updateDownloadButton('enabled', 'download', totalSize);
+    } else {
+        updateDownloadButton('enabled');
+    }
 }
 
 function updateVideoOptions(combinations, selectedQuality) {
@@ -460,14 +541,18 @@ function updateVideoOptions(combinations, selectedQuality) {
             }
             videoCodecSelect.appendChild(option);
         });
-    }
 
-    // Initial format update
-    updateFormatOptions();
+        // Update total file size
+        updateDownloadButtonWithSize();
+    }
 
     // Add event listeners
     videoQualitySelect.addEventListener('change', updateFormatOptions);
     videoFormatSelect.addEventListener('change', updateCodecOptions);
+    videoCodecSelect.addEventListener('change', updateDownloadButtonWithSize);
+
+    // Initial update
+    updateFormatOptions();
 }
 
 function updateAudioOptions(combinations) {
@@ -479,20 +564,9 @@ function updateAudioOptions(combinations) {
     const currentFormat = audioFormatSelect.value;
     const currentCodec = audioCodecSelect.value;
 
-    // Get unique formats and codecs
-    const validFormats = new Set();
-    const validCodecs = new Set();
-    const formatCodecMap = new Map();
-
-    combinations.forEach(combo => {
-        validFormats.add(combo.format);
-        validCodecs.add(combo.codec);
-        if (!formatCodecMap.has(combo.format)) {
-            formatCodecMap.set(combo.format, new Set());
-        }
-        formatCodecMap.get(combo.format).add(combo.codec);
-    });
-
+    // Get unique formats from combinations
+    const validFormats = new Set(combinations.map(combo => combo.format));
+    
     // Update format options
     audioFormatSelect.innerHTML = '';
     validFormats.forEach(format => {
@@ -508,10 +582,15 @@ function updateAudioOptions(combinations) {
     // Update codec options based on selected format
     function updateCodecOptions() {
         const selectedFormat = audioFormatSelect.value;
-        const validCodecsForFormat = formatCodecMap.get(selectedFormat) || new Set();
+        
+        // Filter combinations for selected format
+        const validCombinations = combinations.filter(combo => combo.format === selectedFormat);
+        
+        // Get unique codecs for this format
+        const validCodecs = new Set(validCombinations.map(combo => combo.codec));
         
         audioCodecSelect.innerHTML = '';
-        validCodecsForFormat.forEach(codec => {
+        validCodecs.forEach(codec => {
             const option = document.createElement('option');
             option.value = codec;
             option.textContent = codec;
@@ -520,13 +599,17 @@ function updateAudioOptions(combinations) {
             }
             audioCodecSelect.appendChild(option);
         });
+
+        // Update total file size
+        updateDownloadButtonWithSize();
     }
 
-    // Initial codec update
-    updateCodecOptions();
-
-    // Add event listener for format changes
+    // Add event listeners
     audioFormatSelect.addEventListener('change', updateCodecOptions);
+    audioCodecSelect.addEventListener('change', updateDownloadButtonWithSize);
+
+    // Initial update
+    updateCodecOptions();
 }
 
 // Add event listener for URL input changes
@@ -568,6 +651,9 @@ function updateFormatSelectorsVisibility(downloadMode) {
         audioFormat.style.filter = 'none';
         audioCodec.disabled = false;
         audioCodec.style.filter = 'none';
+
+        // Update total file size
+        updateDownloadButtonWithSize();
     } else {
         // Show only audio options
         videoQualityContainer.style.display = 'none';
@@ -587,5 +673,8 @@ function updateFormatSelectorsVisibility(downloadMode) {
         audioFormat.style.filter = 'none';
         audioCodec.disabled = false;
         audioCodec.style.filter = 'none';
+
+        // Update total file size
+        updateDownloadButtonWithSize();
     }
 }

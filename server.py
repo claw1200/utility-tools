@@ -45,6 +45,9 @@ logging.basicConfig(
 # Add a global dictionary to store download progress
 download_progress = {}
 
+# Add size limit constant
+MAX_DOWNLOAD_SIZE = 100 * 1024 * 1024  # 100MB
+
 def is_rate_limited(ip):
     # Don't even check rate limits for banned IPs
     if ip in BANNED_IPS:
@@ -81,20 +84,18 @@ async def download_media_ytdlp(url, download_mode, format_id=None):
     if download_mode == "audio":
         if format_id:
             download_setting_string = format_id
-        else:
-            download_setting_string = "bestaudio"
+
     else:  # video mode
         if format_id:
             download_setting_string = format_id
-        else:
-            download_setting_string = "best"
+
 
     print(f"\nAttempting download with format string: {download_setting_string}")
 
     ytdl_options = {
         "format": download_setting_string,
         "outtmpl": "temp/%(uploader)s - %(title).150B.%(ext)s",
-        "quiet": False,
+        "quiet": True,
         "no_warnings": False,
         "noplaylist": True,
         "lazy_playlist": False,
@@ -107,7 +108,6 @@ async def download_media_ytdlp(url, download_mode, format_id=None):
         "postprocessors": [{
             "key": "FFmpegMetadata"
         }],
-        "merge_output_format": "mp4"  # Ensure final output is mp4
     }
 
     ytdl = yt_dlp.YoutubeDL(ytdl_options)
@@ -115,18 +115,6 @@ async def download_media_ytdlp(url, download_mode, format_id=None):
     # Run blocking operations in thread pool
     loop = asyncio.get_event_loop()
     try:
-        # First get format information without downloading
-        ytdl_info = yt_dlp.YoutubeDL({
-            **ytdl_options,
-            "format": "best",
-            "listformats": True,  # This will list all available formats
-        })
-
-        # Get format information first
-        format_info = await loop.run_in_executor(
-            None,
-            partial(ytdl_info.extract_info, url, download=False),
-        )
 
         # Now try the actual download
         info = await loop.run_in_executor(
@@ -190,11 +178,53 @@ def download_node():
     logging.info("Received download request")
     url = request.json.get('url')
     download_mode = request.json.get('download_mode')
-    format_id = request.json.get('format_id')  # New parameter
+    format_id = request.json.get('format_id')
 
     logging.info(f"Request as follows:\nURL: {url}\nDownload Mode: {download_mode}\nFormat ID: {format_id}")
 
     try:
+        # First get format information to validate size
+        ytdl_info = yt_dlp.YoutubeDL({
+            "quiet": True,
+            "no_warnings": True,
+            "extract_flat": True,
+            "listformats": False,
+            "noplaylist": True,
+            "lazy_playlist": False,
+            "playlist_items": "1",
+            "nocheckcertificate": True,
+            "cookiefile": ".cookies",
+            "color": "never",
+        })
+
+        # Get format information
+        info = ytdl_info.extract_info(url, download=False)
+        
+        if not info or 'formats' not in info:
+            return jsonify({"error": "No formats found"}), 400
+
+        # Find the requested format and validate its size
+        requested_format = None
+        for f in info['formats']:
+            # Check if this format is part of the requested combination
+            if format_id and '+' in format_id:
+                # For combined formats (e.g. "303+140"), check if this format is part of the combination
+                if f.get('format_id') in format_id.split('+'):
+                    requested_format = f
+                    break
+            elif f.get('format_id') == format_id:
+                requested_format = f
+                break
+            else:
+                print(f"Format ID does not match: {f.get('format_id')} != {format_id}")
+
+
+        if not requested_format:
+            return jsonify({"error": "Requested format not found"}), 400
+
+        if requested_format.get('filesize') and requested_format.get('filesize') > MAX_DOWNLOAD_SIZE:
+            return jsonify({"error": "Requested format exceeds size limit"}), 400
+
         # Get the download information
         response, download_id = asyncio.run(download_media_ytdlp(url, download_mode, format_id))
         
@@ -388,7 +418,7 @@ def get_formats():
             "quiet": True,
             "no_warnings": True,
             "extract_flat": True,
-            "listformats": True,
+            "listformats": False,  # Enable listformats to get full format information
             "noplaylist": True,
             "lazy_playlist": False,
             "playlist_items": "1",
@@ -410,6 +440,11 @@ def get_formats():
         for f in info['formats']:
             # Skip formats without video or audio
             if not f.get('vcodec') and not f.get('acodec'):
+                continue
+
+            # Skip formats that exceed size limit
+            if f.get('filesize') and f.get('filesize') > MAX_DOWNLOAD_SIZE:
+
                 continue
 
             # Handle video formats
@@ -444,13 +479,11 @@ def get_formats():
         # Sort video combinations by height in descending order
         video_combinations.sort(key=lambda x: x['height'], reverse=True)
 
-        # Log the combinations we're returning
-        print("\nReturning video combinations:")
-        for combo in video_combinations:
-            print(f"  {combo}")
-        print("\nReturning audio combinations:")
-        for combo in audio_combinations:
-            print(f"  {combo}")
+        # Check if we have any valid combinations after filtering
+        if not video_combinations and not audio_combinations:
+            return jsonify({
+                "error": "No valid formats found under the size limit"
+            }), 400
 
         return jsonify({
             'video_combinations': video_combinations,
@@ -486,5 +519,6 @@ if __name__ == '__main__':
     app.config['MAX_CONTENT_LENGTH'] = 200 * 1024 * 1024  # 200MB max-length
     # Use threaded mode for better handling of downloads
     app.run(host='0.0.0.0', port=9019, threaded=True)
+
 
 
