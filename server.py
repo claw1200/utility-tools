@@ -259,6 +259,10 @@ def serve_tempo_pitch_calc():
 def serve_spectrogram():
     return send_from_directory(f"{app.static_folder}/spectrogram", 'index.html')
 
+@app.route('/qr-code/')
+def serve_qr_code():
+    return send_from_directory(f"{app.static_folder}/qr-code", 'index.html')
+
 @app.errorhandler(404)
 def page_not_found(e):
     return send_from_directory(f"{app.static_folder}/404", 'index.html')
