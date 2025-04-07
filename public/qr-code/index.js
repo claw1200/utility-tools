@@ -6,6 +6,9 @@ document.addEventListener('DOMContentLoaded', () => {
     document.body.classList.add(savedTheme + '-theme');
     document.getElementById('theme-select').value = savedTheme;
 
+    // Set initial QR code colors based on theme
+    updateQRColors(savedTheme);
+
     // Initialize QR code
     generateQRCode();
     updateSliderValue();
@@ -14,6 +17,27 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('copy-qr').addEventListener('click', copyQRCode);
     document.getElementById('save-qr').addEventListener('click', saveQRCode);
 });
+
+// Function to update QR code colors based on theme
+function updateQRColors(theme) {
+    const themeBgColor = getComputedStyle(document.documentElement).getPropertyValue(`--widget-bg-${theme}`).trim();
+    const themeTextColor = getComputedStyle(document.documentElement).getPropertyValue(`--text-${theme}`).trim();
+    
+    // Add transition class for theme change
+    document.body.classList.add('theme-transition');
+    
+    document.documentElement.style.setProperty('--qr-bg', themeBgColor);
+    qrBackground.value = themeBgColor;
+    qrForeground.value = themeTextColor;
+    
+    // Remove transition class after animation completes
+    setTimeout(() => {
+        document.body.classList.remove('theme-transition');
+    }, 300);
+    
+    // Regenerate QR code with new colors
+    generateQRCode();
+}
 
 // Update slider value display
 function updateSliderValue() {
@@ -37,17 +61,23 @@ document.getElementById('theme-select').addEventListener('change', (e) => {
     document.body.classList.remove('light-theme', 'dark-theme', 'green-theme', 'orange-theme', 'purple-theme');
     document.body.classList.add(theme + '-theme');
     localStorage.setItem('theme', theme);
+    
+    // Update QR code colors when theme changes
+    updateQRColors(theme);
 });
 
 // QR Code generation
 const textInput = document.getElementById('text-input');
 const qrSize = document.getElementById('qr-size');
 const qrErrorCorrection = document.getElementById('qr-error-correction');
+const qrForeground = document.getElementById('qr-foreground');
+const qrBackground = document.getElementById('qr-background');
 const qrContainer = document.getElementById('qr-code');
 const errorMessage = document.getElementById('error-message');
 let currentQR = null;
 let lastSize = 128;
-let debounceTimer;
+let sizeDebounceTimer;
+let colorDebounceTimer;
 
 // Event listeners for real-time updates
 textInput.addEventListener('input', generateQRCode);
@@ -58,8 +88,8 @@ qrSize.addEventListener('input', () => {
     
     // Only update if the size has changed by at least 8 pixels
     if (Math.abs(currentSize - lastSize) >= 8) {
-        clearTimeout(debounceTimer);
-        debounceTimer = setTimeout(() => {
+        clearTimeout(sizeDebounceTimer);
+        sizeDebounceTimer = setTimeout(() => {
             generateQRCode();
             lastSize = currentSize;
         }, 0);
@@ -78,10 +108,28 @@ qrSize.addEventListener('mouseup', () => {
 
 qrErrorCorrection.addEventListener('change', generateQRCode);
 
+// Color picker event listeners with debouncing
+qrForeground.addEventListener('input', () => {
+    clearTimeout(colorDebounceTimer);
+    colorDebounceTimer = setTimeout(() => {
+        generateQRCode();
+    }, 0);
+});
+
+qrBackground.addEventListener('input', () => {
+    clearTimeout(colorDebounceTimer);
+    colorDebounceTimer = setTimeout(() => {
+        document.documentElement.style.setProperty('--qr-bg', qrBackground.value);
+        generateQRCode();
+    }, 0);
+});
+
 function generateQRCode() {
     const text = textInput.value.trim();
     const size = parseInt(qrSize.value);
     const errorCorrection = qrErrorCorrection.value;
+    const foreground = qrForeground.value;
+    const background = qrBackground.value;
 
     if (!text) {
         showError('Please enter some text or URL');
@@ -97,8 +145,8 @@ function generateQRCode() {
             text: text,
             width: size,
             height: size,
-            colorDark: '#000000',
-            colorLight: '#ffffff',
+            colorDark: foreground,
+            colorLight: background,
             correctLevel: QRCode.CorrectLevel[errorCorrection]
         });
         
