@@ -20,7 +20,7 @@ SERVER_CONFIG = {
 SECURITY_CONFIG = {
     'RATE_LIMIT_MINUTES': 5,
     'MAX_REQUESTS': 10,
-    'MAX_DOWNLOAD_SIZE': 100 * 1024 * 1024,  # 100MB
+    'MAX_DOWNLOAD_SIZE': 500 * 1024 * 1024,  # 500MB
     'MALICIOUS_PATTERNS': [
         rb'\x03\x00\x00',  # Common malformed request pattern
         rb'\x16\x03\x01',  # SSL/TLS probe
