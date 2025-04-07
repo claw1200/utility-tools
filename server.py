@@ -12,6 +12,13 @@ import json
 import time
 from urllib.parse import quote
 import secrets
+from security import (
+    MaliciousRequestMiddleware, is_rate_limited, load_banned_ips,
+    check_suspicious_headers, generate_csrf_token, verify_csrf_token,
+    BANNED_IPS
+)
+from download import download_media_ytdlp, stream_progress, stream_file, get_formats
+from config import FLASK_CONFIG, SERVER_CONFIG, SECURITY_CONFIG
 
 app = Flask(__name__, static_folder='public', static_url_path='')
 # turn on debug
@@ -161,336 +168,81 @@ def stream_progress(download_id):
 
     return Response(generate(), mimetype='text/event-stream')
 
+@app.before_request
+def check_malicious_requests():
+    """Check for malicious requests before processing"""
+    load_banned_ips()
+    
+    if request.remote_addr in BANNED_IPS:
+        return jsonify({"error": "Access denied"}), 403
+
+    if check_suspicious_headers(str(request.headers)):
+        logging.warning(f"Blocked suspicious request from {request.remote_addr}")
+        return jsonify({"error": "Access denied"}), 403
+
+@app.before_request
+def check_csrf():
+    """Check CSRF token for non-GET requests"""
+    if request.method == 'GET' or request.path.startswith('/static/'):
+        return
+    
+    if request.path == '/get_csrf_token':
+        return
+        
+    csrf_token = request.headers.get('X-CSRF-Token')
+    if not verify_csrf_token(csrf_token):
+        return jsonify({'error': 'Invalid CSRF token'}), 403
+
+@app.route('/get_csrf_token')
+def get_csrf_token():
+    """Get a new CSRF token"""
+    token = generate_csrf_token()
+    return jsonify({'csrf_token': token})
+
+@app.route('/download_progress/<download_id>')
+def stream_progress_route(download_id):
+    """Stream download progress"""
+    return stream_progress(download_id)
+
 @app.route('/download_node', methods=['POST'])
 def download_node():
+    """Handle download requests"""
     client_ip = request.remote_addr
     
-    if client_ip in BANNED_IPS:
-        return jsonify({"error": "Access denied"}), 403
-        
     if is_rate_limited(client_ip):
         return jsonify({
-            "error": f"Rate limit exceeded. Please wait {RATE_LIMIT_MINUTES} minutes."
+            "error": f"Rate limit exceeded. Please wait {SECURITY_CONFIG['RATE_LIMIT_MINUTES']} minutes."
         }), 429
 
-    logging.info("Received download request")
     url = request.json.get('url')
     download_mode = request.json.get('download_mode')
     format_id = request.json.get('format_id')
 
-    logging.info(f"Request as follows:\nURL: {url}\nDownload Mode: {download_mode}\nFormat ID: {format_id}")
-
     try:
-        # First get format information to validate size
-        ytdl_info = yt_dlp.YoutubeDL({
-            "quiet": True,
-            "no_warnings": True,
-            "extract_flat": True,
-            "listformats": False,
-            "noplaylist": True,
-            "lazy_playlist": False,
-            "playlist_items": "1",
-            "nocheckcertificate": True,
-            "cookiefile": ".cookies",
-            "color": "never",
-        })
-
-        # Get format information
-        info = ytdl_info.extract_info(url, download=False)
-        
-        if not info or 'formats' not in info:
-            return jsonify({"error": "No formats found"}), 400
-
-        # Find the requested format and validate its size
-        requested_format = None
-        for f in info['formats']:
-            # Check if this format is part of the requested combination
-            if format_id and '+' in format_id:
-                # For combined formats (e.g. "303+140"), check if this format is part of the combination
-                if f.get('format_id') in format_id.split('+'):
-                    requested_format = f
-                    break
-            elif f.get('format_id') == format_id:
-                requested_format = f
-                break
-
-
-        if not requested_format:
-            return jsonify({"error": "Requested format not found"}), 400
-
-        if requested_format.get('filesize') and requested_format.get('filesize') > MAX_DOWNLOAD_SIZE:
-            return jsonify({"error": "Requested format exceeds size limit"}), 400
-
-        # Get the download information
         response, download_id = asyncio.run(download_media_ytdlp(url, download_mode, format_id))
         
         if response.json['error'] != "none":
             return jsonify({"error": response.json['error']}), 400
 
-        # Add download_id to response
         response.json['download_id'] = download_id
-
         file_location = response.json['filepath']
         filename = response.json['filename']
 
-        # Stream the file
-        def generate():
-            buffer_size = 65536  # 64KB buffer for better streaming performance
-            
-            try:
-                with open(file_location, 'rb') as f:
-                    while True:
-                        # Read into buffer
-                        buffer = f.read(buffer_size)
-                        if not buffer:
-                            break
-                        yield buffer
-            finally:
-                # Delete file after streaming is complete
-                os.remove(file_location)
-                logging.info(f"File deleted: {file_location}")
-
-        response = app.response_class(
-            generate(),
-            mimetype='application/octet-stream',
-            direct_passthrough=True
-        )
-        # url encode filename
-        filename = quote(filename)
-        response.headers.set('Content-Disposition', f'attachment; filename={filename}')
-        response.headers.set('Content-Length', str(os.path.getsize(file_location)))
-        response.headers.set('Cache-Control', 'no-cache')
-        response.headers.set('X-Accel-Buffering', 'no')  # Disable nginx buffering if present
-        
-        return response
+        return stream_file(file_location, filename)
 
     except Exception as e:
         logging.error(f"Error during download: {e}")
         return jsonify({"error": "An error occurred during the download process"}), 500
 
-def save_banned_ips():
-    with open('banned.txt', 'w') as f:
-        f.write('\n'.join(BANNED_IPS))
-
-def load_banned_ips():
-    try:
-        with open('banned.txt', 'r') as f:
-            BANNED_IPS.update(f.read().splitlines())
-    except FileNotFoundError:
-        pass
-
-def check_raw_request(raw_data, client_ip):
-    """Check raw request data for malicious patterns"""
-    for pattern in MALICIOUS_PATTERNS:
-        if pattern in raw_data:
-            logging.warning(f"Blocked malicious request from {client_ip} matching pattern: {pattern}")
-            BANNED_IPS.add(client_ip)
-            save_banned_ips()
-            return True
-    return False
-
-class MaliciousRequestMiddleware:
-    def __init__(self, app):
-        self.app = app
-
-    def __call__(self, environ, start_response):
-        # Get client IP
-        client_ip = environ.get('REMOTE_ADDR')
-        
-        # Check if IP is already banned
-        if client_ip in BANNED_IPS:
-            logging.warning(f"Rejected request from banned IP: {client_ip}")
-            response = jsonify({"error": "Access denied"})
-            return response(environ, start_response)
-
-        # Get raw request data
-        try:
-            raw_data = environ.get('wsgi.input').read()
-            if check_raw_request(raw_data, client_ip):
-                response = jsonify({"error": "Access denied"})
-                return response(environ, start_response)
-            # Reset input stream
-            environ['wsgi.input'] = io.BytesIO(raw_data)
-        except Exception as e:
-            logging.error(f"Error processing request from {client_ip}: {e}")
-            BANNED_IPS.add(client_ip)
-            save_banned_ips()
-            response = jsonify({"error": "Access denied"})
-            return response(environ, start_response)
-
-        return self.app(environ, start_response)
-
-# Apply the middleware
-app.wsgi_app = MaliciousRequestMiddleware(app.wsgi_app)
-
-# Add this after the app initialization but before the routes
-@app.before_request
-def check_malicious_requests():
-    # load banned ips
-    load_banned_ips()
-    logging.info(f"Banned IPs: {BANNED_IPS}")
-
-    # if ip is banned, return 403
-    if request.remote_addr in BANNED_IPS:
-        return jsonify({"error": "Access denied"}), 403
-
-    # Get the raw request data
-    raw_data = request.get_data()
-    
-    # Check request against malicious patterns
-    for pattern in MALICIOUS_PATTERNS:
-        if pattern in raw_data:
-            # Log the blocked request
-            logging.warning(f"Blocked malicious request from {request.remote_addr} matching pattern: {pattern}")
-            # Add the IP to banned list
-            BANNED_IPS.add(request.remote_addr)
-            # Save the updated banned IPs list
-            save_banned_ips()
-            return jsonify({"error": "Access denied"}), 403
-    
-    # Check if the request headers contain suspicious patterns
-    headers_str = str(request.headers).lower()
-    suspicious_headers = [
-        'sqlmap',
-        'acunetix',
-        'nikto',
-        'nmap',
-        'masscan',
-        'zmeu',
-        'dirbuster',
-        'gobuster',
-        'burp'
-    ]
-    
-    for header in suspicious_headers:
-        if header in headers_str:
-            logging.warning(f"Blocked suspicious request from {request.remote_addr} with header: {header}")
-            BANNED_IPS.add(request.remote_addr)
-            save_banned_ips()
-            return jsonify({"error": "Access denied"}), 403
-
-def generate_csrf_token():
-    return secrets.token_hex(32)
-
-def verify_csrf_token(token):
-    if not token:
-        return False
-    # In a real application, you would store the token in a session
-    # and verify it against the stored value. For simplicity, we'll
-    # just check if it's a valid hex string of the right length
-    return len(token) == 64 and all(c in '0123456789abcdef' for c in token)
-
-@app.route('/get_csrf_token')
-def get_csrf_token():
-    token = generate_csrf_token()
-    return jsonify({'csrf_token': token})
-
-@app.before_request
-def check_csrf():
-    # Skip CSRF check for GET requests and static files
-    if request.method == 'GET' or request.path.startswith('/static/'):
-        return
-    
-    # Skip CSRF check for getting the token itself
-    if request.path == '/get_csrf_token':
-        return
-        
-    # Get CSRF token from header
-    csrf_token = request.headers.get('X-CSRF-Token')
-    
-    if not verify_csrf_token(csrf_token):
-        return jsonify({'error': 'Invalid CSRF token'}), 403
-
 @app.route('/get_formats', methods=['POST'])
-def get_formats():
+def get_formats_route():
+    """Get available formats for a URL"""
     url = request.json.get('url')
     if not url:
         return jsonify({"error": "URL is required"}), 400
+    return get_formats(url)
 
-    try:
-        # Configure yt-dlp to get format information
-        ytdl = yt_dlp.YoutubeDL({
-            "quiet": True,
-            "no_warnings": True,
-            "extract_flat": True,
-            "listformats": False,  # Enable listformats to get full format information
-            "noplaylist": True,
-            "lazy_playlist": False,
-            "playlist_items": "1",
-            "nocheckcertificate": True,
-            "cookiefile": ".cookies",
-            "color": "never",
-        })
-
-        # Get format information
-        info = ytdl.extract_info(url, download=False)
-        
-        if not info or 'formats' not in info:
-            return jsonify({"error": "No formats found"}), 400
-
-        # Extract valid format combinations
-        video_combinations = []
-        audio_combinations = []
-
-        for f in info['formats']:
-            # Skip formats without video or audio
-            if not f.get('vcodec') and not f.get('acodec'):
-                continue
-
-            # Skip formats that exceed size limit
-            if f.get('filesize') and f.get('filesize') > MAX_DOWNLOAD_SIZE:
-
-                continue
-
-            # Handle video formats
-            if f.get('vcodec') and f.get('vcodec') != 'none':
-                height = f.get('height', 0)
-                if height:
-                    video_combinations.append({
-                        'format': f.get('ext', ''),
-                        'vcodec': f.get('vcodec', ''),  # Changed from 'codec' to 'vcodec'
-                        'height': height,
-                        'format_id': f.get('format_id'),
-                        'filesize': f.get('filesize', 0),
-                        'acodec': f.get('acodec', 'none')
-                    })
-
-            # Handle audio formats
-            if f.get('acodec') and f.get('acodec') != 'none':
-                # Only add to audio combinations if it's an audio-only format (no video)
-                if f.get('vcodec') == 'none':
-                    audio_combinations.append({
-                        'format': f.get('ext', ''),
-                        'acodec': f.get('acodec', ''),
-                        'vcodec': f.get('vcodec', 'none'),
-                        'format_id': f.get('format_id'),
-                        'filesize': f.get('filesize', 0)
-                    })
-
-        # Remove duplicates and sort
-        video_combinations = [dict(t) for t in {tuple(d.items()) for d in video_combinations}]
-        audio_combinations = [dict(t) for t in {tuple(d.items()) for d in audio_combinations}]
-
-        # Sort video combinations by height in descending order
-        video_combinations.sort(key=lambda x: x['height'], reverse=True)
-
-        # Check if we have any valid combinations after filtering
-        if not video_combinations and not audio_combinations:
-            return jsonify({
-                "error": "No valid formats found under the size limit"
-            }), 400
-
-        return jsonify({
-            'video_combinations': video_combinations,
-            'audio_combinations': audio_combinations
-        })
-
-    except Exception as e:
-        logging.error(f"Error getting formats: {e}")
-        return jsonify({"error": str(e)}), 500
-
-
-# Serve the main index.html
+# Static file routes
 @app.route('/')
 def serve_index():
     return send_from_directory(app.static_folder, 'index.html')
@@ -513,7 +265,11 @@ if __name__ == '__main__':
     app.config['SEND_FILE_MAX_AGE_DEFAULT'] = 0
     app.config['MAX_CONTENT_LENGTH'] = 200 * 1024 * 1024  # 200MB max-length
     # Use threaded mode for better handling of downloads
-    app.run(host='0.0.0.0', port=9019, threaded=True)
+    app.run(
+        host=SERVER_CONFIG['HOST'],
+        port=SERVER_CONFIG['PORT'],
+        threaded=SERVER_CONFIG['THREADED']
+    )
 
 
 
