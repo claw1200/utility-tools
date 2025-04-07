@@ -255,9 +255,9 @@ def serve_download():
 def serve_tempo_pitch_calc():
     return send_from_directory(f"{app.static_folder}/tempo-pitch-calc", 'index.html')
 
-@app.route('/audio-quality-check/')
-def serve_audio_quality_check():
-    return send_from_directory(f"{app.static_folder}/audio-quality-check", 'index.html')
+@app.route('/spectrogram/')
+def serve_spectrogram():
+    return send_from_directory(f"{app.static_folder}/spectrogram", 'index.html')
 
 @app.errorhandler(404)
 def page_not_found(e):
