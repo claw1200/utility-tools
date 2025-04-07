@@ -6,6 +6,20 @@ document.addEventListener('DOMContentLoaded', () => {
     let audioContext;
     let audioBuffer;
     let isAnalyzing = false;
+    let analysisResults = null; // Store analysis results
+
+    // Debounce function
+    function debounce(func, wait) {
+        let timeout;
+        return function executedFunction(...args) {
+            const later = () => {
+                clearTimeout(timeout);
+                func(...args);
+            };
+            clearTimeout(timeout);
+            timeout = setTimeout(later, wait);
+        };
+    }
 
     // Set up drag and drop
     function setupDragAndDrop() {
@@ -131,20 +145,97 @@ document.addEventListener('DOMContentLoaded', () => {
         const bottomPadding = 30;
         const topPadding = 25;
         
-        canvas.width = container.clientWidth;
-        canvas.height = container.clientHeight;
-        ctx.imageSmoothingEnabled = false;
+        // Only resize if dimensions actually changed
+        const newWidth = container.clientWidth;
+        const newHeight = container.clientHeight;
         
-        canvas.spectrumWidth = canvas.width - (leftPadding + rightPadding);
-        canvas.spectrumHeight = canvas.height - (topPadding + bottomPadding);
-        canvas.spectrumX = leftPadding;
-        canvas.spectrumY = topPadding;
+        if (canvas.width !== newWidth || canvas.height !== newHeight) {
+            canvas.width = newWidth;
+            canvas.height = newHeight;
+            ctx.imageSmoothingEnabled = false;
+            
+            canvas.spectrumWidth = canvas.width - (leftPadding + rightPadding);
+            canvas.spectrumHeight = canvas.height - (topPadding + bottomPadding);
+            canvas.spectrumX = leftPadding;
+            canvas.spectrumY = topPadding;
+
+            // Redraw if we have analysis results
+            if (analysisResults) {
+                drawSpectrum(analysisResults);
+            }
+        }
     }
 
-    window.addEventListener('resize', resizeCanvas);
-    resizeCanvas();
+    // Debounced resize event handler
+    const debouncedResize = debounce(resizeCanvas, 150);
+    window.addEventListener('resize', debouncedResize);
+    resizeCanvas(); // Initial sizing
 
-    // Move the analysis code to its own function
+    // Function to draw the spectrum
+    function drawSpectrum(results) {
+        const { frequencyData, numChunks, displayMaxFreq, duration } = results;
+        
+        // Clear canvas
+        ctx.fillStyle = 'black';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        // Create an off-screen canvas for double buffering
+        const offscreenCanvas = new OffscreenCanvas(canvas.width, canvas.height);
+        const offscreenCtx = offscreenCanvas.getContext('2d');
+        offscreenCtx.fillStyle = 'black';
+        offscreenCtx.fillRect(0, 0, canvas.width, canvas.height);
+
+        // Draw the spectrum with optimized batch rendering
+        const columnWidth = Math.ceil(canvas.spectrumWidth / numChunks);
+        const batchSize = 100; // Process columns in batches
+
+        for (let startCol = 0; startCol < frequencyData.length; startCol += batchSize) {
+            const endCol = Math.min(startCol + batchSize, frequencyData.length);
+            
+            for (let column = startCol; column < endCol; column++) {
+                const x = canvas.spectrumX + Math.floor((column / numChunks) * canvas.spectrumWidth);
+                const chunkData = frequencyData[column];
+
+                for (let i = 0; i < chunkData.length; i++) {
+                    const frequency = i * (audioBuffer.sampleRate / 2) / (results.fftSize / 2);
+                    if (frequency > displayMaxFreq) break;
+
+                    const y = canvas.spectrumY + Math.floor(canvas.spectrumHeight * (1 - frequency / displayMaxFreq));
+                    const color = getColorForDecibel(chunkData[i]);
+
+                    offscreenCtx.fillStyle = color;
+                    offscreenCtx.fillRect(x, y, columnWidth, 1);
+                }
+            }
+        }
+
+        // Draw the final image
+        ctx.drawImage(offscreenCanvas, 0, 0);
+
+        // Add scales with optimized text rendering
+        ctx.fillStyle = 'white';
+        ctx.font = '12px Arial';
+
+        // Draw frequency scale
+        ctx.textAlign = 'right';
+        const freqStep = displayMaxFreq > 20000 ? 5000 : 2500;
+        for (let freq = 0; freq <= displayMaxFreq; freq += freqStep) {
+            const y = canvas.spectrumY + canvas.spectrumHeight * (1 - freq / displayMaxFreq);
+            ctx.fillText(`${Math.round(freq/1000)}k`, canvas.spectrumX - 5, y + 4);
+        }
+
+        // Draw time scale
+        ctx.textAlign = 'center';
+        const timePoints = [0, duration/4, duration/2, (duration*3)/4, duration];
+        timePoints.forEach(time => {
+            const x = canvas.spectrumX + ((time / duration) * canvas.spectrumWidth);
+            ctx.fillText(`${time.toFixed(1)}s`, x, canvas.height - 8);
+        });
+
+        // Draw dB scale
+        drawDBScale(ctx, canvas.width, canvas.height);
+    }
+
     async function analyzeAudio() {
         if (!audioBuffer || isAnalyzing) return;
         
@@ -153,29 +244,28 @@ document.addEventListener('DOMContentLoaded', () => {
             analyzeButton.disabled = true;
             analyzeButton.textContent = 'Analyzing...';
             
-            // Clear canvas
-            ctx.fillStyle = 'black';
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            const fftSize = 4096;
+            const channelData = audioBuffer.getChannelData(0);
             
-            const fftSize = 4096; // Good balance of performance and quality
-            const channelData = audioBuffer.getChannelData(0); // Use first channel
-            
-            // Calculate analysis parameters
-            const overlap = 0.5; // 50% overlap
+            const overlap = 0.5;
             const chunkSize = fftSize;
             const hopSize = Math.floor(chunkSize * (1 - overlap));
             const numChunks = Math.floor((channelData.length - chunkSize) / hopSize);
             
-            // Create an off-screen canvas for double buffering
+            const nyquistFreq = audioBuffer.sampleRate / 2;
+            const maxFreq = Math.min(nyquistFreq, 20000);
+            const displayMaxFreq = maxFreq * 1.15;
+
+            const allFrequencyData = [];
+
+            // Initialize the offscreen canvas once
             const offscreenCanvas = new OffscreenCanvas(canvas.width, canvas.height);
             const offscreenCtx = offscreenCanvas.getContext('2d');
             offscreenCtx.fillStyle = 'black';
             offscreenCtx.fillRect(0, 0, canvas.width, canvas.height);
 
-            // Find the maximum frequency present in the audio
-            const nyquistFreq = audioBuffer.sampleRate / 2;
-            const maxFreq = Math.min(nyquistFreq, 20000); // Cap at 20kHz
-            const displayMaxFreq = maxFreq * 1.15; // Show 15% above the max frequency
+            // Calculate column width once
+            const columnWidth = Math.ceil(canvas.spectrumWidth / numChunks);
             
             // Process chunks in batches
             const batchSize = 32;
@@ -183,18 +273,15 @@ document.addEventListener('DOMContentLoaded', () => {
                 const batchEnd = Math.min(chunkStart + batchSize, numChunks);
                 const batchPromises = [];
 
-                // Create promises for each chunk in the batch
                 for (let i = chunkStart; i < batchEnd; i++) {
                     const startSample = i * hopSize;
                     const chunk = channelData.slice(startSample, startSample + chunkSize);
                     batchPromises.push(processAudioChunk(chunk, audioBuffer.sampleRate, fftSize));
                 }
 
-                // Wait for all chunks in batch to complete
                 const batchResults = await Promise.all(batchPromises);
-
-                // Draw the batch results
-                const columnWidth = Math.ceil(canvas.spectrumWidth / numChunks);
+                
+                // Draw this batch immediately
                 batchResults.forEach((frequencyData, batchIndex) => {
                     const column = chunkStart + batchIndex;
                     const x = canvas.spectrumX + Math.floor((column / numChunks) * canvas.spectrumWidth);
@@ -204,42 +291,36 @@ document.addEventListener('DOMContentLoaded', () => {
                         if (frequency > displayMaxFreq) break;
 
                         const y = canvas.spectrumY + Math.floor(canvas.spectrumHeight * (1 - frequency / displayMaxFreq));
-                        const db = frequencyData[i];
-                        const color = getColorForDecibel(db);
+                        const color = getColorForDecibel(frequencyData[i]);
 
                         offscreenCtx.fillStyle = color;
                         offscreenCtx.fillRect(x, y, columnWidth, 1);
                     }
                 });
 
-                // Update display
+                // Draw the current progress to the main canvas
                 ctx.drawImage(offscreenCanvas, 0, 0);
+
+                // Store the frequency data for resize handling
+                allFrequencyData.push(...batchResults);
+
+                // Update progress
                 const progress = (batchEnd / numChunks) * 100;
                 analyzeButton.textContent = `Analyzing... ${Math.round(progress)}%`;
                 await new Promise(resolve => setTimeout(resolve, 0));
             }
-            
-            // Add frequency scale
-            ctx.fillStyle = 'white';
-            ctx.font = '12px Arial';
-            ctx.textAlign = 'right';
-            const freqStep = displayMaxFreq > 20000 ? 5000 : 2500;
-            for (let freq = 0; freq <= displayMaxFreq; freq += freqStep) {
-                const y = canvas.spectrumY + canvas.spectrumHeight * (1 - freq / displayMaxFreq);
-                ctx.fillText(`${Math.round(freq/1000)}k`, canvas.spectrumX - 5, y + 4);
-            }
-            
-            // Add time scale
-            ctx.textAlign = 'center';
-            const duration = audioBuffer.duration;
-            const timePoints = [0, duration/4, duration/2, (duration*3)/4, duration];
-            timePoints.forEach(time => {
-                const x = canvas.spectrumX + ((time / duration) * canvas.spectrumWidth);
-                ctx.fillText(`${time.toFixed(1)}s`, x, canvas.height - 8);
-            });
-            
-            // Draw dB scale with color gradient
-            drawDBScale(ctx, canvas.width, canvas.height);
+
+            // Store analysis results for resize handling
+            analysisResults = {
+                frequencyData: allFrequencyData,
+                numChunks,
+                displayMaxFreq,
+                duration: audioBuffer.duration,
+                fftSize
+            };
+
+            // Draw the scales
+            drawScales(ctx, canvas, displayMaxFreq, audioBuffer.duration);
             
         } catch (error) {
             console.error('Analysis error:', error);
@@ -249,6 +330,32 @@ document.addEventListener('DOMContentLoaded', () => {
             analyzeButton.disabled = false;
             analyzeButton.textContent = 'Analyze Audio';
         }
+    }
+
+    // Separate function for drawing scales
+    function drawScales(ctx, canvas, displayMaxFreq, duration) {
+        // Add scales with optimized text rendering
+        ctx.fillStyle = 'white';
+        ctx.font = '12px Arial';
+
+        // Draw frequency scale
+        ctx.textAlign = 'right';
+        const freqStep = displayMaxFreq > 20000 ? 5000 : 2500;
+        for (let freq = 0; freq <= displayMaxFreq; freq += freqStep) {
+            const y = canvas.spectrumY + canvas.spectrumHeight * (1 - freq / displayMaxFreq);
+            ctx.fillText(`${Math.round(freq/1000)}k`, canvas.spectrumX - 5, y + 4);
+        }
+
+        // Draw time scale
+        ctx.textAlign = 'center';
+        const timePoints = [0, duration/4, duration/2, (duration*3)/4, duration];
+        timePoints.forEach(time => {
+            const x = canvas.spectrumX + ((time / duration) * canvas.spectrumWidth);
+            ctx.fillText(`${time.toFixed(1)}s`, x, canvas.height - 8);
+        });
+
+        // Draw dB scale
+        drawDBScale(ctx, canvas.width, canvas.height);
     }
 
     // Keep the analyze button as a fallback
