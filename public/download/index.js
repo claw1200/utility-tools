@@ -81,6 +81,58 @@ function getFormatId(download_mode, settings) {
     return selectedAudio ? `${selectedVideo.format_id}+${selectedAudio.format_id}` : selectedVideo.format_id;
 }
 
+function get_theme_cookie() {
+    // set theme based on cookie
+    const theme = localStorage.getItem('theme');
+    if (theme) {
+        document.body.className = theme + '-theme';
+        document.getElementById('theme-select').value = theme;
+    }
+}
+
+function get_direct_mode() {
+    // set direct mode based on cookie
+    const directMode = localStorage.getItem('direct_mode');
+    if (directMode) {
+        document.getElementById('direct-mode').value = directMode;
+    }
+}
+
+function theme_updated() {
+    // called when theme is updated
+    const theme = document.getElementById('theme-select').value;
+    localStorage.setItem('theme', theme);
+    document.body.classList.add('loaded');
+}
+
+function direct_mode_updated() {
+    // called when direct mode is updated
+    const directMode = document.getElementById('direct-mode').value;
+    localStorage.setItem('direct_mode', directMode);
+}
+
+// Add event listeners
+document.getElementById('theme-select').addEventListener('change', theme_updated);
+document.getElementById('direct-mode').addEventListener('change', direct_mode_updated);
+
+// wait for the DOM to load before running the function
+document.addEventListener('DOMContentLoaded', function() {
+    get_theme_cookie();
+    get_direct_mode();
+    document.body.classList.add('loaded');
+    
+    // Set initial visibility based on default download mode
+    const defaultDownloadMode = document.getElementById('download-mode').value;
+    updateFormatSelectorsVisibility(defaultDownloadMode);
+    
+    // Fetch CSRF token
+    fetchCSRFToken();
+});
+
+// Add debounce mechanism
+let lastFormatRequestTime = 0;
+const FORMAT_REQUEST_INTERVAL = 1000; // only lower this if you wanna get rate limited by the server lol
+
 function download() {
     const settings = {
         url: document.getElementById('url-input-box').value,
@@ -111,87 +163,123 @@ function download() {
 
     updateDownloadButton('disabled');
 
-    fetch('/download_node', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'X-CSRF-Token': csrfToken
-        },
-        body: JSON.stringify({
-            url: settings.url,
-            download_mode: settings.download_mode,
-            format_id: format_id
-        }),
-    })
-    .then(async (response) => {
-        if (response.status === 429) {
-            error_display('slow it down buddy, and try again in a moment 🥶');
+    // Check if direct mode is enabled
+    const directMode = document.getElementById('direct-mode').value === 'on';
+
+    if (directMode) {
+        // Find the direct download URL for the selected format
+        let downloadUrl = null;
+        if (settings.download_mode === 'audio') {
+            const selectedAudio = window.currentAudioCombinations.find(combo => 
+                combo.format === settings.audio_format && 
+                combo.acodec === settings.audio_codec
+            );
+            downloadUrl = selectedAudio?.url;
+        } else {
+            const selectedVideo = window.currentVideoCombinations.find(combo => 
+                combo.height === parseInt(settings.video_quality) && 
+                combo.format === settings.video_format && 
+                combo.vcodec === settings.video_codec &&
+                (settings.download_mode === 'mute' ? (!combo.acodec || combo.acodec === 'none') : true)
+            );
+            downloadUrl = selectedVideo?.url;
+        }
+
+        if (!downloadUrl) {
+            error_display('Could not find direct download URL for the selected format');
+            updateDownloadButton('enabled');
             return;
         }
-        if (response.status === 400) {
-            error_display('failed to find a file matching the given criteria 🤔');
-            return;
-        }
-        if (response.status !== 200) {
-            throw new Error('Failed to fetch');
-        }
 
-        // Get filename from the Content-Disposition header
-        const contentDisposition = response.headers.get('Content-Disposition');
-        let filename = contentDisposition ? contentDisposition.split('=')[1] : 'downloaded_file';
-        filename = decodeURIComponent(filename);
-
-        // Get total file size from the Content-Length header
-        const contentLength = response.headers.get('Content-Length');
-        const total_size = contentLength ? parseInt(contentLength, 10) : 0;
-        let downloaded = 0;
-
-        const progress = document.getElementById('progress');
-        const reader = response.body.getReader();
-        const stream = new ReadableStream({
-            start(controller) {
-                function push() {
-                    reader.read().then(({ done, value }) => {
-                        if (done) {
-                            controller.close();
-                            return;
-                        }
-
-                        downloaded += value.length;
-                        if (total_size) {
-                            const progress_percentage = ((downloaded / total_size) * 100).toFixed(0);
-                            updateProgressBar(progress_percentage);
-                        }
-
-                        controller.enqueue(value);
-                        push();
-                    }).catch((error) => {
-                        console.error('Stream error:', error);
-                        controller.error(error);
-                    });
-                }
-                push();
-            },
-        });
-
-        // Convert the stream into a blob and trigger download
-        const responseBlob = await new Response(stream).blob();
-        const downloadUrl = window.URL.createObjectURL(responseBlob);
-        const a = document.createElement('a');
-        a.href = downloadUrl;
-        a.download = filename;
-        document.body.appendChild(a);
-        a.click();
-        a.remove();
+        // Open the direct download URL in a new tab
+        window.open(downloadUrl, '_blank');
 
         // Reset UI
-        progress.style.display = 'none';
         updateDownloadButton('enabled');
-    })
-    .catch(error => {
-        console.error(error);
-        error_display("something went wrong (but idk what it is) 😱");
-    });
+    } else {
+        // Original server-based download method
+        fetch('/download_node', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-Token': csrfToken
+            },
+            body: JSON.stringify({
+                url: settings.url,
+                download_mode: settings.download_mode,
+                format_id: format_id
+            }),
+        })
+        .then(async (response) => {
+            if (response.status === 429) {
+                error_display('slow it down buddy, and try again in a moment 🥶');
+                return;
+            }
+            if (response.status === 400) {
+                error_display('failed to find a file matching the given criteria 🤔');
+                return;
+            }
+            if (response.status !== 200) {
+                throw new Error('Failed to fetch');
+            }
+
+            // Get filename from the Content-Disposition header
+            const contentDisposition = response.headers.get('Content-Disposition');
+            let filename = contentDisposition ? contentDisposition.split('=')[1] : 'downloaded_file';
+            filename = decodeURIComponent(filename);
+
+            // Get total file size from the Content-Length header
+            const contentLength = response.headers.get('Content-Length');
+            const total_size = contentLength ? parseInt(contentLength, 10) : 0;
+            let downloaded = 0;
+
+            const progress = document.getElementById('progress');
+            const reader = response.body.getReader();
+            const stream = new ReadableStream({
+                start(controller) {
+                    function push() {
+                        reader.read().then(({ done, value }) => {
+                            if (done) {
+                                controller.close();
+                                return;
+                            }
+
+                            downloaded += value.length;
+                            if (total_size) {
+                                const progress_percentage = ((downloaded / total_size) * 100).toFixed(0);
+                                updateProgressBar(progress_percentage);
+                            }
+
+                            controller.enqueue(value);
+                            push();
+                        }).catch((error) => {
+                            console.error('Stream error:', error);
+                            controller.error(error);
+                        });
+                    }
+                    push();
+                },
+            });
+
+            // Convert the stream into a blob and trigger download
+            const responseBlob = await new Response(stream).blob();
+            const downloadUrl = window.URL.createObjectURL(responseBlob);
+            const a = document.createElement('a');
+            a.href = downloadUrl;
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+
+            // Reset UI
+            progress.style.display = 'none';
+            updateDownloadButton('enabled');
+        })
+        .catch(error => {
+            console.error(error);
+            error_display("something went wrong (but idk what it is) 😱");
+        });
+    }
 }
 
 function error_display(error_message_text) {
@@ -242,50 +330,6 @@ document.querySelector('.menu-icon').addEventListener('click', function() {
 document.getElementById('download-mode').addEventListener('change', function(e) {
     updateFormatSelectorsVisibility(e.target.value);
 });
-
-
-function get_theme_cookie() {
-    // set theme based on cookie
-    const theme = localStorage.getItem('theme');
-    if (theme) {
-        document.body.className = theme + '-theme';
-        document.getElementById('theme-select').value = theme;
-    }
-}
-
-function theme_updated() {
-    // called when theme is updated
-    const theme = document.getElementById('theme-select').value;
-    localStorage.setItem('theme', theme);
-    document.body.classList.add('loaded');
-}
-
-// Add event listeners
-document.getElementById('theme-select').addEventListener('change', theme_updated);
-
-// wait for the DOM to load before running the function
-document.addEventListener('DOMContentLoaded', function() {
-    get_theme_cookie();
-    document.body.classList.add('loaded');
-    
-    // Set initial visibility based on default download mode
-    const defaultDownloadMode = document.getElementById('download-mode').value;
-    updateFormatSelectorsVisibility(defaultDownloadMode);
-    
-    // Fetch CSRF token
-    fetchCSRFToken();
-});
-
-// window.addEventListener('pageshow', function(event) {
-//     if (event.persisted) {
-//         window.location.reload();
-//     }
-// }
-// );
-
-// Add debounce mechanism
-let lastFormatRequestTime = 0;
-const FORMAT_REQUEST_INTERVAL = 1000; // only lower this if you wanna get rate limited by the server lol
 
 function updateFormats(url) {
     if (!url) return;

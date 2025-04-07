@@ -133,7 +133,8 @@ def get_formats(url):
                         'height': height,
                         'format_id': f.get('format_id'),
                         'filesize': f.get('filesize', 0),
-                        'acodec': f.get('acodec', 'none')
+                        'acodec': f.get('acodec', 'none'),
+                        'url': f.get('url', '')
                     })
 
             if f.get('acodec') and f.get('acodec') != 'none' and f.get('vcodec') == 'none':
@@ -142,7 +143,8 @@ def get_formats(url):
                     'acodec': f.get('acodec', ''),
                     'vcodec': f.get('vcodec', 'none'),
                     'format_id': f.get('format_id'),
-                    'filesize': f.get('filesize', 0)
+                    'filesize': f.get('filesize', 0),
+                    'url': f.get('url', '')
                 })
 
         video_combinations = [dict(t) for t in {tuple(d.items()) for d in video_combinations}]
