@@ -38,11 +38,34 @@
 
     <div class="widget">
         <h1>Audio Spectrum Analyzer</h1>
-        <div class="input-group">
-            <label for="audioFile">Select Audio File:</label>
-            <input type="file" id="audioFile" accept="audio/*">
+        <div class="file-display">
+            <p id="file-name">No file selected</p>
+            <div class="metadata-container">
+                <div class="metadata-box">
+                    <span class="metadata-label">Format</span>
+                    <span id="format-value">-</span>
+                </div>
+                <div class="metadata-box">
+                    <span class="metadata-label">Sample Rate</span>
+                    <span id="sample-rate-value">-</span>
+                </div>
+                <div class="metadata-box">
+                    <span class="metadata-label">Bit Rate</span>
+                    <span id="bit-rate-value">-</span>
+                </div>
+                <div class="metadata-box">
+                    <span class="metadata-label">Duration</span>
+                    <span id="duration-value">-</span>
+                </div>
+                <div class="metadata-box">
+                    <span class="metadata-label">Channels</span>
+                    <span id="channels-value">-</span>
+                </div>
+            </div>
+            <input type="file" id="audioFile" accept="audio/*" style="display: none;">
         </div>
         <div class="spectrum-container">
+            <div id="empty-state">Drag and drop an audio file here</div>
             <canvas id="spectrumCanvas"></canvas>
         </div>
         <div class="controls">

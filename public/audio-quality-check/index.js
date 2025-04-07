@@ -9,66 +9,132 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Set up drag and drop
     function setupDragAndDrop() {
-        const dropZone = document.body;
-        
-        dropZone.addEventListener('dragover', (e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            dropZone.classList.add('dragover');
+        const spectrumContainer = document.querySelector('.spectrum-container');
+        const fileInput = document.getElementById('audioFile');
+
+        // Click on spectrum container to trigger file input
+        spectrumContainer.addEventListener('click', () => {
+            if (!audioContext || !isAnalyzing) {
+                fileInput.click();
+            }
         });
 
-        dropZone.addEventListener('dragleave', (e) => {
+        // Drag and drop events
+        spectrumContainer.addEventListener('dragenter', (e) => {
             e.preventDefault();
-            e.stopPropagation();
-            dropZone.classList.remove('dragover');
+            if (!isAnalyzing) {
+                spectrumContainer.style.borderColor = 'var(--button-light)';
+            }
         });
 
-        dropZone.addEventListener('drop', async (e) => {
+        spectrumContainer.addEventListener('dragover', (e) => {
             e.preventDefault();
-            e.stopPropagation();
-            dropZone.classList.remove('dragover');
+        });
 
-            const file = e.dataTransfer.files[0];
-            if (file && file.type.startsWith('audio/')) {
-                await handleAudioFile(file);
+        spectrumContainer.addEventListener('dragleave', () => {
+            spectrumContainer.style.borderColor = '';
+        });
+
+        spectrumContainer.addEventListener('drop', (e) => {
+            e.preventDefault();
+            spectrumContainer.style.borderColor = '';
+            
+            if (!isAnalyzing) {
+                const file = e.dataTransfer.files[0];
+                if (file && file.type.startsWith('audio/')) {
+                    handleFileSelect(file);
+                }
+            }
+        });
+
+        // File input change event
+        fileInput.addEventListener('change', (e) => {
+            if (e.target.files.length > 0) {
+                handleFileSelect(e.target.files[0]);
             }
         });
     }
 
-    // Handle audio file loading and start analysis
-    async function handleAudioFile(file) {
-        if (!file) return;
+    function updateFileDisplay(file, audioBuffer = null) {
+        const fileNameElement = document.getElementById('file-name');
+        const emptyState = document.getElementById('empty-state');
+        const canvas = document.getElementById('spectrumCanvas');
+        
+        if (file) {
+            fileNameElement.textContent = file.name;
+            emptyState.style.display = 'none';
+            canvas.classList.add('active');
+            
+            // Update metadata
+            document.getElementById('format-value').textContent = file.type.split('/')[1].toUpperCase();
+            
+            if (audioBuffer) {
+                document.getElementById('sample-rate-value').textContent = `${(audioBuffer.sampleRate / 1000).toFixed(1)} kHz`;
+                document.getElementById('channels-value').textContent = audioBuffer.numberOfChannels;
+                document.getElementById('duration-value').textContent = `${audioBuffer.duration.toFixed(1)}s`;
+            } else {
+                document.getElementById('sample-rate-value').textContent = '-';
+                document.getElementById('channels-value').textContent = '-';
+                document.getElementById('duration-value').textContent = '-';
+            }
+            
+            // Calculate approximate bit rate if possible
+            if (file.size && audioBuffer) {
+                const bitRate = Math.round((file.size * 8) / audioBuffer.duration / 1000);
+                document.getElementById('bit-rate-value').textContent = `${bitRate} kbps`;
+            } else {
+                document.getElementById('bit-rate-value').textContent = '-';
+            }
+        } else {
+            fileNameElement.textContent = 'No file selected';
+            emptyState.style.display = 'block';
+            canvas.classList.remove('active');
+            
+            // Reset metadata
+            document.getElementById('format-value').textContent = '-';
+            document.getElementById('sample-rate-value').textContent = '-';
+            document.getElementById('bit-rate-value').textContent = '-';
+            document.getElementById('duration-value').textContent = '-';
+            document.getElementById('channels-value').textContent = '-';
+        }
+    }
 
-        try {
-            // Initialize audio context
-            audioContext = new (window.AudioContext || window.webkitAudioContext)();
-            
-            // Read file as ArrayBuffer
-            const arrayBuffer = await file.arrayBuffer();
-            audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
-            
-            // Start analysis immediately
-            analyzeAudio();
-        } catch (error) {
-            console.error('Error loading audio file:', error);
-            alert('Error loading audio file. Please try another file.');
+    async function handleFileSelect(file) {
+        if (file && file.type.startsWith('audio/')) {
+            updateFileDisplay(file);
+            try {
+                // Initialize audio context
+                audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                
+                // Read file as ArrayBuffer
+                const arrayBuffer = await file.arrayBuffer();
+                audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
+                
+                // Update display with audio buffer info
+                updateFileDisplay(file, audioBuffer);
+                
+                // Start analysis immediately
+                analyzeAudio();
+            } catch (error) {
+                console.error('Error loading audio file:', error);
+                alert('Error loading audio file. Please try another file.');
+                updateFileDisplay(null);
+            }
         }
     }
 
     // Set canvas size with higher resolution
     function resizeCanvas() {
         const container = canvas.parentElement;
-        // Add padding for legends
-        const leftPadding = 40;  // For frequency labels
-        const rightPadding = 80; // For dB scale
-        const bottomPadding = 30; // For time labels
-        const topPadding = 25;   // Increased top padding for more headroom
+        const leftPadding = 40;
+        const rightPadding = 80;
+        const bottomPadding = 30;
+        const topPadding = 25;
         
         canvas.width = container.clientWidth;
         canvas.height = container.clientHeight;
         ctx.imageSmoothingEnabled = false;
         
-        // Store the spectrum drawing area dimensions
         canvas.spectrumWidth = canvas.width - (leftPadding + rightPadding);
         canvas.spectrumHeight = canvas.height - (topPadding + bottomPadding);
         canvas.spectrumX = leftPadding;
@@ -77,12 +143,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
     window.addEventListener('resize', resizeCanvas);
     resizeCanvas();
-
-    // Handle file selection via input
-    audioFileInput.addEventListener('change', async (e) => {
-        const file = e.target.files[0];
-        await handleAudioFile(file);
-    });
 
     // Move the analysis code to its own function
     async function analyzeAudio() {
@@ -202,12 +262,10 @@ document.addEventListener('DOMContentLoaded', () => {
     document.body.classList.add(savedTheme + '-theme');
     document.getElementById('theme-select').value = savedTheme;
     
-    // Add loaded class after a short delay to prevent flash
     setTimeout(() => {
         document.body.classList.add('loaded');
     }, 100);
 
-    // Theme selector event listener
     document.getElementById('theme-select').addEventListener('change', (e) => {
         const theme = e.target.value;
         document.body.classList.remove('light-theme', 'dark-theme', 'green-theme', 'orange-theme', 'purple-theme');
