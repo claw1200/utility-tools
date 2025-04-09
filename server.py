@@ -263,6 +263,10 @@ def serve_spectrogram():
 def serve_qr_code():
     return send_from_directory(f"{app.static_folder}/qr-code", 'index.html')
 
+@app.route('/movie/')
+def serve_movie():
+    return send_from_directory(f"{app.static_folder}/movie", 'index.html')
+
 @app.errorhandler(404)
 def page_not_found(e):
     return send_from_directory(f"{app.static_folder}/404", 'index.html')

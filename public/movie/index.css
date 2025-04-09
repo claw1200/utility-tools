@@ -1,0 +1,584 @@
+:root {
+    --bg-light: #f0f0f0;
+    --widget-bg-light: #ffffff;
+    --text-light: #333333;
+    --text-secondary-light: #555555;
+    --border-light: #cccccc;
+    --button-light: #007bff;
+    --button-hover-light: #0056b3;    
+    --wave-color-light: rgba(255, 255, 255, 0.3);
+    --widget-bg-dark: #1a1a1a;
+    --input-bg-dark: #2a2a2a;
+    --input-border-dark: #3a3a3a;
+}
+
+body {
+    font-family: Arial, sans-serif;
+    margin: 0;
+    padding: 0;
+    background-color: black;
+    color: var(--text-light);
+    transition: background-color 0.3s, color 0.3s;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    overflow-x: hidden;
+}
+
+body.light-theme {
+    background-color: var(--bg-light);
+}
+
+body.dark-theme {
+    background-color: var(--widget-bg-dark);
+}
+
+
+/* Base styles */
+.widget {
+    max-width: 100%;
+    margin: 3rem auto;
+    padding: 3rem;
+    border-radius: 12px;
+    box-shadow: 0 0 15px rgba(0,0,0,0.1);
+    background-color: var(--widget-bg-dark);
+    transition: background-color 0.3s;
+}
+
+body.light-theme .widget {
+    background-color: var(--widget-bg-light);
+}
+
+
+.widget.main-widget {
+    display: none; /* Hidden by default */
+    max-width: 900px;
+    margin: 1rem auto;
+}
+
+.widget.main-widget.show {
+    display: block; /* Show when the class 'show' is added */
+}
+
+.video-container {
+    width: 100%;
+    aspect-ratio: 16/9;
+    margin: 2rem 0;
+}
+
+.video-player {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 8px;
+}
+.container {
+    display: flex;
+    flex-direction: row;
+    justify-content: center;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 1rem;
+    padding: 1rem;
+    margin: 0 1rem;
+}
+
+.movies-row {
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    gap: 1rem;
+    overflow-y: auto;
+    padding: 40px;
+    padding-bottom: 150px;  /* Add padding at bottom to account for fade */
+    height: calc(100vh - 650px);
+    min-height: 0;
+    position: relative;
+    mask-image: linear-gradient(to bottom, black calc(100% - 100px), transparent 100%);
+    -webkit-mask-image: linear-gradient(to bottom, black calc(100% - 100px), transparent 100%);
+    scrollbar-width: thin;
+    scrollbar-color: var(--input-border-dark) var(--input-bg-dark);
+}
+
+/* Webkit scrollbar styling */
+.movies-row::-webkit-scrollbar {
+    width: 8px;
+}
+
+.movies-row::-webkit-scrollbar-track {
+    background: var(--input-bg-dark);
+    border-radius: 4px;
+}
+
+.movies-row::-webkit-scrollbar-thumb {
+    background: var(--input-border-dark);
+    border-radius: 4px;
+}
+
+.movies-row::-webkit-scrollbar-thumb:hover {
+    background: var(--button-light);
+}
+
+/* Light theme scrollbar */
+body.light-theme .movies-row {
+    scrollbar-color: var(--border-light) var(--widget-bg-light);
+}
+
+body.light-theme .movies-row::-webkit-scrollbar-track {
+    background: var(--widget-bg-light);
+}
+
+body.light-theme .movies-row::-webkit-scrollbar-thumb {
+    background: var(--border-light);
+}
+
+body.light-theme .movies-row::-webkit-scrollbar-thumb:hover {
+    background: var(--button-light);
+}
+
+.movies-row::after {
+    display: none;
+}
+
+body.light-theme .movies-row::after {
+    background: linear-gradient(to bottom, transparent, var(--bg-light));
+}
+
+.widget.movie-card {
+    box-sizing: border-box;
+    width: 100%;
+    max-width: 300px;
+    max-height: 500px;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    padding: 0.5rem;
+    cursor: pointer;
+    transition: background-color 0.3s, box-shadow 0.3s, transform 0.3s;
+}
+
+.widget.movie-card:hover {
+    box-shadow: 0 0 20px rgba(0,0,0,0.2);
+    transform: scale(1.05);
+}
+
+.widget.movie-card label {
+    font-size: 1.2rem;
+    font-weight: bold;
+    text-align: center;
+}
+
+.widget.movie-card .image-container {
+    width: 100%;
+    aspect-ratio: 2/3;
+    overflow: hidden;
+    border-radius: 12px;
+    margin-bottom: 0.5rem;
+}
+
+.widget.movie-card img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.widget.movie-card p {
+    margin: 0;
+    font-size: 0.8rem;
+    text-align: center;
+    color: var(--text-secondary-light);
+}
+
+.error-message {
+  display: none;
+  align-self: center;
+  text-align: center;
+}
+
+.input-group {
+    margin-bottom: 1.5rem;
+}
+
+.extra-inputs-container {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    margin-top: 1.5rem;
+    margin-bottom: 1.5rem;
+}
+
+.extra-input {
+    width: 100%;
+}
+
+.extra-input label {
+    margin-bottom: 0.375rem;
+    font-size: 1.35rem;
+}
+
+.extra-input select {
+    width: 100%;
+    padding: 0.75rem;
+    border-radius: 6px;
+    border: 1px solid var(--input-border-dark);
+    background-color: var(--input-bg-dark);
+    color: var(--text-light);
+    outline-style: none;
+    transition: border-color 0.3s, background-color 0.3s, color 0.3s, filter 0.3s;
+    font-size: 1.2rem;
+}
+
+body.light-theme .extra-input select {
+    border: 1px solid var(--border-light);
+    background-color: var(--widget-bg-light);
+}
+
+label {
+    display: block;
+    margin-bottom: 0.75rem;
+    font-size: 1.35rem;
+}
+
+input {
+    width: 95%;
+    padding: 0.75rem;
+    border: 1px solid var(--input-border-dark);
+    border-radius: 6px;
+    background-color: var(--input-bg-dark);
+    color: var(--text-light);
+    transition: border-color 0.3s, background-color 0.3s, color 0.3s;
+    font-size: 1.2rem;
+}
+
+body.light-theme input {
+    border: 1px solid var(--border-light);
+    background-color: var(--widget-bg-light);
+}
+
+button {
+    width: 100%;
+    padding: 1.125rem;
+    background-color: var(--button-light);
+    color: white;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    margin-top: 1.5rem;
+    transition: background-color 0.3s, color 0.3s;
+    font-size: 1.35rem;
+}
+
+button:disabled {
+    filter: grayscale(0.5);
+}
+
+button:hover {
+    background-color: var(--button-hover-light);
+}
+
+.menu-icon {
+    position: fixed;
+    right: 30px;
+    top: 30px;
+    width: 45px;
+    height: 45px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    transition: transform 0.2s ease;
+    cursor: pointer;
+}
+
+.menu-icon img,
+.menu-icon svg {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+}
+
+.menu-icon:hover {
+    transform: rotate(0deg) scale(1.1);
+}
+
+.menu-icon.active {
+    transform: rotate(90deg);
+}
+
+.menu-icon.active:hover {
+    transform: rotate(90deg) scale(1.1);
+}
+
+.settings-panel {
+    position: fixed;
+    right: -360px;
+    top: 0;
+    width: 300px;
+    height: 100%;
+    background-color: var(--widget-bg-dark);
+    padding: 30px;
+    padding-top: 60px;
+    box-shadow: -3px 0 7.5px rgba(0,0,0,0.1);
+    transition: 0.3s;
+    z-index: 2;
+}
+
+body.light-theme .settings-panel {
+    background-color: var(--widget-bg-light);
+}
+
+.settings-panel h2 {
+    margin-bottom: 0rem;
+    font-size: 1.8rem;
+}
+
+.settings-panel.open {
+    right: 0;
+}
+
+.setting-item {
+    margin: 22.5px 0;
+    max-width: 225px;
+}
+
+.setting-item select {
+    width: 100%;
+    padding: 0.75rem;
+    border-radius: 6px;
+    border: 1px solid var(--input-border-dark);
+    background-color: var(--input-bg-dark);
+    color: var(--text-light);
+    outline-style: none;
+    transition: border-color 0.3s, background-color 0.3s, color 0.3s;
+    font-size: 1.2rem;
+}
+
+body.light-theme .setting-item select {
+    border: 1px solid var(--border-light);
+    background-color: var(--widget-bg-light);
+}
+
+.setting-item input {
+    max-width: 89%;
+}
+
+.footer {
+    text-align: center;
+    margin-top: 3rem;
+    z-index: 1;
+}
+
+.footer p {
+    font-size: 1.35rem;
+    margin: 0.75rem 0;
+}
+
+.footer a {
+    color: #666;
+    text-decoration: none;
+    transition: color 0.2s ease;
+    font-size: 1.35rem;
+}
+
+.footer a:hover {
+    color: var(--button-hover-light);
+}
+
+
+.wave-container {
+    position: fixed;
+    width: 100%;
+    height: 100%;
+    top: 0;
+    left: 0;
+    overflow: hidden;
+    z-index: -1;
+}
+
+.wave {
+  position: absolute;
+  width: 200%;
+  height: 200%;
+  background: linear-gradient(
+    45deg,
+    var(--wave-color-light) 0%,
+    var(--wave-color-dark) 100%
+  );
+  opacity: 0.5;
+  border-radius: 40%;
+  animation: wave 120s infinite linear;
+  transform-origin: 50% 48%;
+  bottom: -100%;
+}
+
+.wave2 {
+  animation: wave 240s infinite linear;
+  opacity: 0.3;
+}
+
+.wave3 {
+  animation: wave 200s infinite linear;
+  opacity: 0.2;
+}
+
+.wave4 {
+  animation: wave 100s infinite linear;
+  opacity: 0.1;
+}
+
+@keyframes wave {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-color-scheme: dark) {
+  .wave {
+    background: linear-gradient(
+      45deg,
+      var(--wave-color-dark) 0%,
+      var(--wave-color-light) 100%
+    );
+  }
+}
+
+/* Mobile styles - must come after base styles to override them */
+@media (max-width: 500px) {
+    .widget {
+        position: relative;
+        max-width: 450px;
+        margin: 2rem auto;
+        padding: 2rem;
+        border-radius: 8px;
+        box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    }
+
+    .input-group {
+        margin-bottom: 1rem;
+    }
+
+    .extra-inputs-container {
+        flex-direction: column;
+        gap: 0.5rem;
+        margin-top: 1rem;
+        margin-bottom: 1rem;
+    }
+
+    .extra-input {
+        width: 100%;
+        min-width: auto;
+    }
+
+    .extra-input label {
+        margin-bottom: 0.25rem;
+        font-size: 0.9rem;
+    }
+
+    .extra-input select {
+        padding: 0.5rem;
+        border-radius: 4px;
+        font-size: 0.9rem;
+    }
+
+    label {
+        margin-bottom: 0.5rem;
+        font-size: 0.9rem;
+    }
+
+    input {
+        width: 95%;
+        padding: 0.5rem;
+        border-radius: 4px;
+        font-size: 0.9rem;
+    }
+
+    button {
+        width: 100%;
+        padding: 0.75rem;
+        border-radius: 4px;
+        margin-top: 1rem;
+        font-size: 0.9rem;
+    }
+
+    .menu-icon {
+        position: absolute;
+        right: 20px;
+        top: 40px;
+        width: 40px;
+        height: 40px;
+    }
+
+    .menu-icon img,
+    .menu-icon svg {
+        width: 100%;
+        height: 100%;
+        object-fit: contain;
+    }
+
+    .settings-panel {
+        right: -240px;
+        width: 200px;
+        padding: 20px;
+        padding-top: 40px;
+        box-shadow: -2px 0 5px rgba(0,0,0,0.1);
+    }
+
+    .settings-panel h2 {
+        font-size: 1.2rem;
+        margin-bottom: 0rem;
+    }
+
+    .setting-item {
+        margin: 15px 0;
+        max-width: 150px;
+    }
+
+    .setting-item select {
+        padding: 0.5rem;
+        border-radius: 4px;
+        font-size: 0.9rem;
+    }
+
+    .footer {
+        margin-top: 2rem;
+    }
+
+    .footer p, .footer a {
+        font-size: 0.9rem;
+        margin: 0.5rem 0;
+    }
+
+    .progress-bar {
+        border-radius: 4px;
+        margin-top: 1rem;
+    }
+
+    .progress {
+        height: 1rem;
+    }
+
+    h1 {
+        font-size: 1.5rem;
+        margin-bottom: 1rem;
+    }
+
+    .error-message {
+        font-size: 0.9rem;
+    }
+}
+
+/* Add styles for settings groups */
+.settings-group {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+}
+
+.settings-group .extra-input {
+    flex: 1;
+    min-width: 180px;
+}

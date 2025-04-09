@@ -8,3 +8,5 @@ test.py
 bans.log
 /__pycache__/
 server.log
+public/movie/movies.json
+public/movie/scrape.py

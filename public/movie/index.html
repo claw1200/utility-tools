@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <title>Simple Movies</title>
+        <link rel="stylesheet" type="text/css" href="/movie/index.css">
+        <link rel="stylesheet" type="text/css" href="/themes.css">
+        <link rel="icon" href="/favicon.ico"/>
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <meta name="description" content="A simple movie player.">
+        <meta name="keywords" content="movie player, movie, video">
+        <meta name="author" content="claw">
+        <meta property="og:title" content="Simple Movies">
+        <meta property="og:description" content="A simple movie player.">
+        <meta property="og:url" content="https://github.com/claw1200/utility-tools">
+        <meta property="og:type" content="website">
+        <meta property="og:site_name" content="Simple Movies">
+        <meta name="twitter:card" content="summary">
+        <meta name="twitter:title" content="Simple Movies">
+        <meta name="twitter:description" content="A simple movie player.">
+    </head>
+<body>
+    
+    <div class="menu-icon" onclick="toggleMenu()">
+        <img src="/menu.svg" alt="Menu" id="menu-icon">
+    </div>
+
+    <div class="settings-panel">
+        <h2>settings ⚙️</h2>
+        <div class="setting-item">
+            <label>theme</label>
+            <select id="theme-select">
+                <option value="light">light</option>
+                <option value="dark">dark</option>
+                <option value="green">green</option>
+                <option value="orange">orange</option>
+                <option value="purple">purple</option>
+            </select>
+        </div>
+        
+        <h2>links</h2>
+        <div class="setting-links">
+            <button onclick="window.location.href='https://discord.gg/racJC3KmRH'">discord</button>
+            <button onclick="window.location.href='https://github.com/claw1200'">github</button>
+        </div>
+    </div>
+
+    <div class="widget main-widget">
+        <div class="movie-info">
+            <h2 id="currentMovieTitle">Select a movie</h2>
+            <p id="currentMovieDescription"></p>
+        </div>
+        <div class="video-container">
+            <iframe 
+                id="videoPlayer"
+                frameborder="0" 
+                allowfullscreen
+                class="video-player">
+            </iframe>
+        </div>
+    </div>
+
+    <div class="widget search-widget">
+        <input type="text" id="searchInput" placeholder="Search for a movie">
+    </div>
+
+    <div class="container">
+        <div class="movies-row">
+            <!-- Movies will be loaded here -->
+        </div>
+    </div>
+
+    <div class="wave-container">
+        <div class="wave"></div>
+        <div class="wave wave2"></div>
+        <div class="wave wave3"></div>
+        <div class="wave wave4"></div>
+    </div>
+
+    <div class="footer">
+        <p>created by <a href="https://github.com/claw1200">claw</a></p>
+    </div>
+
+</body>
+<script src="index.js"></script>
+</html>
